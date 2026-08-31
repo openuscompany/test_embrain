@@ -71,13 +71,17 @@
       pageH = pageW / aspect;
     }
 
+    var width = Math.round(pageW);
+    var height = Math.round(pageH);
+
     return {
-      width: Math.round(pageW),
-      height: Math.round(pageH),
-      minWidth: 240,
-      maxWidth: 1200,
-      minHeight: 320,
-      maxHeight: 1600
+      width: width,
+      height: height,
+      // stretch 모드가 화면보다 커지지 않도록 상한을 실제 계산값으로 고정
+      minWidth: Math.max(200, Math.round(width * 0.6)),
+      maxWidth: width,
+      minHeight: Math.max(280, Math.round(height * 0.6)),
+      maxHeight: height
     };
   }
 
@@ -160,46 +164,61 @@
     event.preventDefault();
   });
 
+  var pageImages = null;
+  var pageAspect = 0.7;
+  var pageCount = 0;
+
+  function buildBook(startIndex) {
+    var dims = sizeBookToStage(pageAspect);
+
+    if (pageFlip) {
+      pageFlip.destroy();
+      pageFlip = null;
+    }
+
+    pageFlip = new St.PageFlip(bookEl, {
+      width: dims.width,
+      height: dims.height,
+      size: 'stretch',
+      minWidth: dims.minWidth,
+      maxWidth: dims.maxWidth,
+      minHeight: dims.minHeight,
+      maxHeight: dims.maxHeight,
+      maxShadowOpacity: 0.5,
+      showCover: true,
+      usePortrait: true,
+      mobileScrollSupport: false,
+      useMouseEvents: true
+    });
+
+    pageFlip.loadFromImages(pageImages);
+
+    pageFlip.on('init', function () {
+      if (loadingEl) loadingEl.classList.add('is-hidden');
+      bookEl.classList.add('is-ready');
+      if (startIndex) pageFlip.flip(startIndex);
+      updateIndicator(pageFlip.getCurrentPageIndex(), pageCount);
+    });
+
+    pageFlip.on('flip', function (e) {
+      updateIndicator(e.data, pageCount);
+      hideHintOnce();
+    });
+  }
+
   pdfjsLib.getDocument(PDF_URL).promise.then(function (pdfDoc) {
-    var numPages = pdfDoc.numPages;
+    pageCount = pdfDoc.numPages;
     var pagePromises = [];
-    for (var i = 1; i <= numPages; i++) {
+    for (var i = 1; i <= pageCount; i++) {
       pagePromises.push(renderPageToDataUrl(pdfDoc, i));
     }
 
     return Promise.all(pagePromises).then(function (rendered) {
-      var images = rendered.map(function (r) { return r.dataUrl; });
-      var aspect = rendered[0] ? rendered[0].aspect : 0.7;
-      var dims = sizeBookToStage(aspect);
+      pageImages = rendered.map(function (r) { return r.dataUrl; });
+      pageAspect = rendered[0] ? rendered[0].aspect : 0.7;
 
-      pageFlip = new St.PageFlip(bookEl, {
-        width: dims.width,
-        height: dims.height,
-        size: 'stretch',
-        minWidth: dims.minWidth,
-        maxWidth: dims.maxWidth,
-        minHeight: dims.minHeight,
-        maxHeight: dims.maxHeight,
-        maxShadowOpacity: 0.5,
-        showCover: true,
-        usePortrait: true,
-        mobileScrollSupport: false,
-        useMouseEvents: true
-      });
-
-      pageFlip.loadFromImages(images);
-      buildToc(images, aspect);
-
-      pageFlip.on('init', function (e) {
-        if (loadingEl) loadingEl.classList.add('is-hidden');
-        bookEl.classList.add('is-ready');
-        updateIndicator(0, numPages);
-      });
-
-      pageFlip.on('flip', function (e) {
-        updateIndicator(e.data, numPages);
-        hideHintOnce();
-      });
+      buildToc(pageImages, pageAspect);
+      buildBook();
     });
   }).catch(function (err) {
     console.error(err);
@@ -230,7 +249,10 @@
   window.addEventListener('resize', function () {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
-      if (pageFlip) pageFlip.updateState && pageFlip.updateState();
-    }, 150);
+      if (pageFlip && pageImages) {
+        var currentIndex = pageFlip.getCurrentPageIndex();
+        buildBook(currentIndex);
+      }
+    }, 200);
   });
 })();
