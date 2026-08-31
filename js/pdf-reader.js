@@ -42,8 +42,10 @@
       var viewport = page.getViewport({ scale: scale });
 
       var canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
+      // ceil을 쓰면 캔버스가 실제 렌더 영역보다 미세하게 커져서, 안 그려진 가장자리가
+      // JPEG 변환 시 흰 줄로 남는다 (투명 픽셀 -> 흰색). floor로 캔버스를 실제 영역 이하로 잡는다.
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
       var ctx = canvas.getContext('2d');
 
       return page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function () {
@@ -77,10 +79,13 @@
     return {
       width: width,
       height: height,
-      // stretch 모드가 화면보다 커지지 않도록 상한을 실제 계산값으로 고정
-      minWidth: Math.max(200, Math.round(width * 0.6)),
+      // stretch 모드가 화면보다 커지지 않도록 상한을 실제 계산값으로 고정.
+      // min은 max를 절대 넘으면 안 되므로(가로형처럼 height가 작은 경우 고정 하한을 쓰면
+      // min > max가 되어 라이브러리가 박스를 이미지 비율과 다르게 키워 흰 여백이 생긴다)
+      // 비율 기반으로만 계산한다.
+      minWidth: Math.round(width * 0.6),
       maxWidth: width,
-      minHeight: Math.max(280, Math.round(height * 0.6)),
+      minHeight: Math.round(height * 0.6),
       maxHeight: height
     };
   }
