@@ -172,14 +172,36 @@
   var pageImages = null;
   var pageAspect = 0.7;
   var pageCount = 0;
+  var lastDims = null;
 
   function buildBook(startIndex) {
     var dims = sizeBookToStage(pageAspect);
 
+    // 리사이즈 이벤트가 연속으로 여러 번 튀는 경우(폰트 로딩, 프리뷰 패널 리스케일 등),
+    // 실제로 크기가 달라진 게 아니면 다시 그리지 않는다. 그냥 다시 그리면 destroy() ->
+    // 새 컨테이너 생성이 반복되면서 무한 루프처럼 계속 재생성되는 문제가 생긴다.
+    if (lastDims && Math.abs(lastDims.width - dims.width) <= 2 && Math.abs(lastDims.height - dims.height) <= 2) {
+      return;
+    }
+    lastDims = dims;
+
     if (pageFlip) {
+      // destroy()가 컨테이너 엘리먼트 자체를 DOM에서 제거하므로, 매번 새 컨테이너를
+      // 만들어 붙여야 다음 buildBook()이 정상적으로 화면에 나타난다.
       pageFlip.destroy();
       pageFlip = null;
     }
+
+    // 최초 호출 시에는 HTML에 있던 정적 #pr-book이 아직 안 지워진 상태이므로,
+    // id가 겹치는 잔재가 있으면 먼저 치운다 (안 그러면 getElementById가 옛 빈 엘리먼트를 반환함).
+    var stale = document.getElementById('pr-book');
+    if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
+
+    var freshBookEl = document.createElement('div');
+    freshBookEl.id = 'pr-book';
+    freshBookEl.className = 'pr-book';
+    stage.appendChild(freshBookEl);
+    bookEl = freshBookEl;
 
     pageFlip = new St.PageFlip(bookEl, {
       width: dims.width,
@@ -198,14 +220,19 @@
 
     pageFlip.loadFromImages(pageImages);
 
-    pageFlip.on('init', function () {
+    // 콜백이 실행될 때는 buildBook()이 다시 호출되어 바깥의 bookEl/pageFlip이
+    // 이미 다른 값으로 바뀌어 있을 수 있으므로, 이 호출에서 만든 요소를 직접 캡처해서 쓴다.
+    var thisBookEl = freshBookEl;
+    var thisPageFlip = pageFlip;
+
+    thisPageFlip.on('init', function () {
       if (loadingEl) loadingEl.classList.add('is-hidden');
-      bookEl.classList.add('is-ready');
-      if (startIndex) pageFlip.flip(startIndex);
-      updateIndicator(pageFlip.getCurrentPageIndex(), pageCount);
+      thisBookEl.classList.add('is-ready');
+      if (startIndex) thisPageFlip.flip(startIndex);
+      updateIndicator(thisPageFlip.getCurrentPageIndex(), pageCount);
     });
 
-    pageFlip.on('flip', function (e) {
+    thisPageFlip.on('flip', function (e) {
       updateIndicator(e.data, pageCount);
       hideHintOnce();
     });
