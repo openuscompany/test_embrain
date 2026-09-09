@@ -10,13 +10,9 @@
   var hintEl = document.getElementById('pr-hint');
   var prevBtn = document.getElementById('pr-prev');
   var nextBtn = document.getElementById('pr-next');
-  var indicatorBtn = document.getElementById('pr-indicator');
   var currentEl = document.querySelector('.pr-indicator__current');
   var totalEl = document.querySelector('.pr-indicator__total');
-  var tocTrigger = document.getElementById('pr-toc-trigger');
-  var tocOverlay = document.getElementById('pr-toc-overlay');
-  var tocClose = document.getElementById('pr-toc-close');
-  var tocGrid = document.getElementById('pr-toc-grid');
+  var indexRail = document.getElementById('pr-index-rail');
 
   if (!stage || !bookEl || typeof pdfjsLib === 'undefined' || typeof St === 'undefined') {
     showError('이북을 불러오지 못했어요. 새로고침해 주세요.');
@@ -95,6 +91,7 @@
     if (totalEl) totalEl.textContent = String(totalPages);
     if (prevBtn) prevBtn.disabled = pageIndex <= 0;
     if (nextBtn) nextBtn.disabled = pageIndex >= totalPages - 1;
+    setActiveIndexTab(pageIndex);
   }
 
   function hideHintOnce() {
@@ -103,62 +100,41 @@
     }
   }
 
-  function buildToc(images, aspect) {
-    if (!tocGrid) return;
-    bookEl.style.setProperty('--pr-page-aspect', aspect);
-    tocGrid.style.setProperty('--pr-page-aspect', aspect);
+  var indexTabs = [];
 
-    images.forEach(function (src, i) {
-      var item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'pr-toc-item';
+  function buildIndexRail(numPages) {
+    if (!indexRail) return;
+    indexRail.innerHTML = '';
+    indexTabs = [];
 
-      var thumb = document.createElement('span');
-      thumb.className = 'pr-toc-item__thumb';
+    for (var i = 0; i < numPages; i++) {
+      var tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'pr-index-tab';
+      tab.textContent = String(i + 1);
+      tab.setAttribute('aria-label', (i + 1) + '페이지로 이동');
 
-      var img = document.createElement('img');
-      img.src = src;
-      img.alt = '';
-      thumb.appendChild(img);
+      // 사전 색인처럼 페이지마다 색이 조금씩 달라지도록 색상환을 순서대로 사용
+      var hue = numPages > 1 ? Math.round((i / (numPages - 1)) * 300) : 210;
+      tab.style.background = 'hsl(' + hue + ', 55%, 48%)';
 
-      var num = document.createElement('span');
-      num.className = 'pr-toc-item__num';
-      num.textContent = String(i + 1) + '페이지';
+      tab.addEventListener('click', (function (index) {
+        return function () {
+          if (pageFlip) pageFlip.flip(index);
+          hideHintOnce();
+        };
+      })(i));
 
-      item.appendChild(thumb);
-      item.appendChild(num);
-
-      item.addEventListener('click', function () {
-        if (pageFlip) pageFlip.flip(i);
-        closeToc();
-        hideHintOnce();
-      });
-
-      tocGrid.appendChild(item);
-    });
+      indexRail.appendChild(tab);
+      indexTabs.push(tab);
+    }
   }
 
-  function openToc() {
-    if (tocOverlay) tocOverlay.classList.add('is-open');
+  function setActiveIndexTab(pageIndex) {
+    for (var i = 0; i < indexTabs.length; i++) {
+      indexTabs[i].classList.toggle('is-active', i === pageIndex);
+    }
   }
-
-  function closeToc() {
-    if (tocOverlay) tocOverlay.classList.remove('is-open');
-  }
-
-  if (tocTrigger) tocTrigger.addEventListener('click', openToc);
-  if (indicatorBtn) indicatorBtn.addEventListener('click', openToc);
-  if (tocClose) tocClose.addEventListener('click', closeToc);
-
-  if (tocOverlay) {
-    tocOverlay.addEventListener('click', function (event) {
-      if (event.target === tocOverlay) closeToc();
-    });
-  }
-
-  document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') closeToc();
-  });
 
   // 우클릭 저장/드래그 방지
   document.addEventListener('contextmenu', function (event) {
@@ -249,7 +225,7 @@
       pageImages = rendered.map(function (r) { return r.dataUrl; });
       pageAspect = rendered[0] ? rendered[0].aspect : 0.7;
 
-      buildToc(pageImages, pageAspect);
+      buildIndexRail(pageCount);
       buildBook();
     });
   }).catch(function (err) {
