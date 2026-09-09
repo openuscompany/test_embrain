@@ -57,7 +57,10 @@
 
       return page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function () {
         var aspect = viewport.width / viewport.height;
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        // PNG(무손실)는 사진이 섞인 페이지에서 용량이 급격히 커지고 인코딩도 오래 걸려서
+        // (47페이지 기준 40초 이상) 실사용에 부적합했다. 대신 JPEG 품질을 크게 올려서
+        // 글자 뭉개짐(링잉 아티팩트)을 최소화하는 쪽으로 절충한다.
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.97);
         canvas.width = 0;
         canvas.height = 0;
         return { dataUrl: dataUrl, aspect: aspect };
@@ -126,7 +129,7 @@
       tab.className = 'pr-index-tab';
       tab.textContent = chapter.title;
       tab.setAttribute('aria-label', chapter.title + ' 부분으로 이동');
-      tab.style.background = chapter.color;
+      tab.style.setProperty('--tab-color', chapter.color);
       tab.dataset.pageIndex = String(pageIndex);
 
       tab.addEventListener('click', function () {
