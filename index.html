@@ -6,12 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>수협 웹진 (PDF 이북)</title>
   <link rel="stylesheet" href="css/reset.css">
-  <link rel="stylesheet" href="css/pdf-reader.css?v=5">
+  <link rel="stylesheet" href="css/pdf-reader.css?v=19">
 </head>
 
 <body class="pdf-reader">
 
   <div class="pr-wrapper">
+
+    <nav class="pr-index-rail" id="pr-index-rail" aria-label="목차"></nav>
 
     <div class="pr-stage" id="pr-stage">
       <div class="pr-loading" id="pr-loading">
@@ -26,11 +28,11 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
 
-      <button type="button" class="pr-indicator" id="pr-indicator" aria-label="목차 보기">
+      <div class="pr-indicator" id="pr-indicator" aria-live="polite">
         <span class="pr-indicator__current">1</span>
         <span class="pr-indicator__sep">/</span>
         <span class="pr-indicator__total">1</span>
-      </button>
+      </div>
 
       <button type="button" class="pr-btn pr-btn--next" id="pr-next" aria-label="다음 페이지">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -39,21 +41,11 @@
 
     <p class="pr-hint" id="pr-hint">← 좌우로 넘겨보세요, 모서리를 드래그해도 돼요 →</p>
 
-    <div class="pr-toc-overlay" id="pr-toc-overlay">
-      <div class="pr-toc-panel">
-        <div class="pr-toc-panel__header">
-          <h2>목차</h2>
-          <button type="button" class="pr-toc-close" id="pr-toc-close" aria-label="닫기">&times;</button>
-        </div>
-        <div class="pr-toc-grid" id="pr-toc-grid"></div>
-      </div>
-    </div>
-
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
-  <script src="js/pdf-reader.js?v=5"></script>
+  <script src="js/pdf-reader.js?v=19"></script>
 </body>
 
 </html>
