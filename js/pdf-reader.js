@@ -1,8 +1,19 @@
 (function () {
   // 이 파일 하나만 바꾸면 다른 PDF로 교체할 수 있습니다.
-  var PDF_URL = 'pdf/sample.pdf';
+  var PDF_URL = 'pdf/2027_v1.pdf';
   var PDF_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
   var RENDER_TARGET_WIDTH = 1000; // 페이지 1장을 렌더링할 목표 픽셀 폭 (선명도용)
+
+  // 목차 탭에 표시할 챕터 목록. 다른 PDF로 교체할 때는 이 배열도 그 PDF의 목차에 맞게 수정하세요.
+  // page: 그 챕터가 시작하는 실제 PDF 페이지 번호(1부터 시작). color: 탭 색상.
+  var CHAPTERS = [
+    { title: "'영점소비' 시대", page: 5, color: '#000a82' },
+    { title: '1. 마이-파이', page: 15, color: '#00c800' },
+    { title: '2. 언클리셰', page: 22, color: '#00b4ff' },
+    { title: '3. BPM', page: 29, color: '#ff5aaa' },
+    { title: '4. 스탯 맥싱', page: 35, color: '#6464ff' },
+    { title: '영점 조준의 시대', page: 39, color: '#000a82' }
+  ];
 
   var stage = document.getElementById('pr-stage');
   var bookEl = document.getElementById('pr-book');
@@ -107,33 +118,40 @@
     indexRail.innerHTML = '';
     indexTabs = [];
 
-    for (var i = 0; i < numPages; i++) {
+    CHAPTERS.forEach(function (chapter) {
+      var pageIndex = Math.max(0, Math.min(numPages - 1, chapter.page - 1));
+
       var tab = document.createElement('button');
       tab.type = 'button';
       tab.className = 'pr-index-tab';
-      tab.textContent = String(i + 1);
-      tab.setAttribute('aria-label', (i + 1) + '페이지로 이동');
+      tab.textContent = chapter.title;
+      tab.setAttribute('aria-label', chapter.title + ' 부분으로 이동');
+      tab.style.background = chapter.color;
+      tab.dataset.pageIndex = String(pageIndex);
 
-      // 사전 색인처럼 페이지마다 색이 조금씩 달라지도록 색상환을 순서대로 사용
-      var hue = numPages > 1 ? Math.round((i / (numPages - 1)) * 300) : 210;
-      tab.style.background = 'hsl(' + hue + ', 55%, 48%)';
-
-      tab.addEventListener('click', (function (index) {
-        return function () {
-          if (pageFlip) pageFlip.flip(index);
-          hideHintOnce();
-        };
-      })(i));
+      tab.addEventListener('click', function () {
+        if (pageFlip) pageFlip.flip(pageIndex);
+        hideHintOnce();
+      });
 
       indexRail.appendChild(tab);
       indexTabs.push(tab);
-    }
+    });
   }
 
   function setActiveIndexTab(pageIndex) {
+    // 스프레드 모드에서는 pageIndex(왼쪽)와 그 오른쪽 페이지(pageIndex+1)가 함께 보이므로,
+    // 오른쪽 페이지에 챕터가 시작하는 경우도 그 챕터를 활성화 표시해야 한다.
+    var visibleIndex = pageIndex + 1;
+    var activeTab = null;
     for (var i = 0; i < indexTabs.length; i++) {
-      indexTabs[i].classList.toggle('is-active', i === pageIndex);
+      if (Number(indexTabs[i].dataset.pageIndex) <= visibleIndex) {
+        activeTab = indexTabs[i];
+      }
     }
+    indexTabs.forEach(function (tab) {
+      tab.classList.toggle('is-active', tab === activeTab);
+    });
   }
 
   // 우클릭 저장/드래그 방지
@@ -204,7 +222,11 @@
     thisPageFlip.on('init', function () {
       if (loadingEl) loadingEl.classList.add('is-hidden');
       thisBookEl.classList.add('is-ready');
-      if (startIndex) thisPageFlip.flip(startIndex);
+      // 리사이즈로 다시 그릴 때 원래 보던 페이지로 복귀시키는 용도라 애니메이션 없는
+      // turnToPage를 쓴다. flip()은 애니메이션 상태를 가지는데, 리사이즈가 짧은 간격으로
+      // 연달아 발생하면 flip 도중 currentPageIndex가 불안정해져서 페이지가 계속
+      // 앞으로 튀는 문제가 있었다.
+      if (startIndex) thisPageFlip.turnToPage(startIndex);
       updateIndicator(thisPageFlip.getCurrentPageIndex(), pageCount);
     });
 
