@@ -74,7 +74,12 @@
 
   function sizeBookToStage(aspect) {
     var stageRect = stage.getBoundingClientRect();
-    var availW = Math.max(200, stageRect.width - 32);
+    // 모바일에서는 목차 탭이 항상 반쯤 나와 있어 책 오른쪽을 가릴 수 있으므로,
+    // CSS의 .pr-stage padding-right(모바일 64px)만큼 책 너비 계산에서도 빼서
+    // 탭이 그 여백 안에서만 보이게 한다.
+    var isNarrow = stageRect.width <= 640;
+    var padRight = isNarrow ? 64 : 16;
+    var availW = Math.max(200, stageRect.width - 16 - padRight);
     var availH = Math.max(200, stageRect.height - 32);
 
     // 두 페이지가 나란히 펼쳐지는 스프레드 기준으로 한 페이지 폭을 계산
