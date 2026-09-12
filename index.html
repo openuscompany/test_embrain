@@ -4,16 +4,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>수협 웹진 (PDF 이북)</title>
+  <title>2027 트렌드모니터 (이북)</title>
   <link rel="stylesheet" href="css/reset.css">
-  <link rel="stylesheet" href="css/pdf-reader.css?v=26">
+  <link rel="stylesheet" href="css/pdf-reader.css?v=40">
 </head>
 
-<body class="pdf-reader">
+<body class="pdf-reader" data-theme="light">
 
   <div class="pr-wrapper">
 
     <nav class="pr-index-rail" id="pr-index-rail" aria-label="목차"></nav>
+
+    <div class="pr-theme-switcher" id="pr-theme-switcher" role="group" aria-label="화면 테마 선택">
+      <button type="button" class="pr-theme-btn" data-theme="light" aria-label="밝은 모드">
+        <span class="pr-theme-btn__swatch pr-theme-btn__swatch--light"></span>
+      </button>
+      <button type="button" class="pr-theme-btn" data-theme="dark" aria-label="다크 모드">
+        <span class="pr-theme-btn__swatch pr-theme-btn__swatch--dark"></span>
+      </button>
+      <button type="button" class="pr-theme-btn" data-theme="illustration" aria-label="일러스트 배경">
+        <span class="pr-theme-btn__swatch pr-theme-btn__swatch--illustration"></span>
+      </button>
+    </div>
 
     <div class="pr-stage" id="pr-stage">
       <div class="pr-loading" id="pr-loading">
@@ -43,9 +55,8 @@
 
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
-  <script src="js/pdf-reader.js?v=26"></script>
+  <script src="js/pdf-reader.js?v=40"></script>
 </body>
 
 </html>
