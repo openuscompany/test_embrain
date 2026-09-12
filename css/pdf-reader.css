@@ -358,6 +358,15 @@ body {
   }
 }
 
+/* 모바일에서는 호버가 없어서 목차 탭이 항상 반쯤 나와 있는 상태라, 책 오른쪽을
+   가리지 않도록 그만큼 여백을 비워두고 그 안에서만 탭이 보이게 한다. */
+@media (max-width: 640px) {
+  .pr-stage {
+    justify-content: flex-start;
+    padding-right: 64px;
+  }
+}
+
 /* 우클릭/드래그/선택 방지 */
 
 .pdf-reader,
