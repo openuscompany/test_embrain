@@ -1,18 +1,23 @@
 (function () {
-  // 이 파일 하나만 바꾸면 다른 PDF로 교체할 수 있습니다.
-  var PDF_URL = 'pdf/2027_v1.pdf';
-  var PDF_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-  var RENDER_TARGET_WIDTH = 1000; // 페이지 1장을 렌더링할 목표 픽셀 폭 (선명도용)
+  // 페이지 이미지가 들어있는 폴더와 장수. 파일명은 page-001.jpg ~ page-0NN.jpg 형식이어야 한다.
+  // 다른 호로 교체할 때는 PAGE_FOLDER/PAGE_COUNT와 아래 CHAPTERS만 새 자료에 맞게 바꾸면 된다.
+  var PAGE_FOLDER = 'pages';
+  var PAGE_COUNT = 96;
 
-  // 목차 탭에 표시할 챕터 목록. 다른 PDF로 교체할 때는 이 배열도 그 PDF의 목차에 맞게 수정하세요.
-  // page: 그 챕터가 시작하는 실제 PDF 페이지 번호(1부터 시작). color: 탭 색상.
+  function pageUrl(pageNumber) {
+    var padded = ('000' + pageNumber).slice(-3);
+    return PAGE_FOLDER + '/page-' + padded + '.jpg';
+  }
+
+  // 목차 탭에 표시할 챕터 목록. 다른 자료로 교체할 때는 이 배열도 그 자료의 목차에 맞게 수정하세요.
+  // page: 그 챕터가 시작하는 실제 이미지 페이지 번호(1부터 시작). color: 탭 색상.
   var CHAPTERS = [
-    { title: "'영점소비' 시대", page: 5, color: '#000a82' },
-    { title: '1. 마이-파이', page: 15, color: '#00c800' },
-    { title: '2. 언클리셰', page: 22, color: '#00b4ff' },
-    { title: '3. BPM', page: 29, color: '#ff5aaa' },
-    { title: '4. 스탯 맥싱', page: 35, color: '#6464ff' },
-    { title: '영점 조준의 시대', page: 39, color: '#000a82' }
+    { title: "'영점소비' 시대", page: 10, color: '#000a82' },
+    { title: '1. 마이-파이', page: 31, color: '#00c800' },
+    { title: '2. 언클리셰', page: 45, color: '#00b4ff' },
+    { title: '3. BPM', page: 59, color: '#ff5aaa' },
+    { title: '4. 스탯 맥싱', page: 71, color: '#6464ff' },
+    { title: '영점 조준의 시대', page: 79, color: '#000a82' }
   ];
 
   var stage = document.getElementById('pr-stage');
@@ -25,12 +30,37 @@
   var totalEl = document.querySelector('.pr-indicator__total');
   var indexRail = document.getElementById('pr-index-rail');
 
-  if (!stage || !bookEl || typeof pdfjsLib === 'undefined' || typeof St === 'undefined') {
+  // 테마 전환 (밝은 모드 / 다크 모드 / 일러스트 배경). 책 페이지 이미지 자체는 그대로 두고
+  // 주변 화면 색상만 바뀐다. 선택한 테마는 localStorage에 저장해서 다음 방문에도 유지한다.
+  (function initThemeSwitcher() {
+    var THEME_KEY = 'pr-theme';
+    var switcherEl = document.getElementById('pr-theme-switcher');
+    if (!switcherEl) return;
+    var buttons = switcherEl.querySelectorAll('.pr-theme-btn');
+
+    function applyTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      buttons.forEach(function (btn) {
+        btn.classList.toggle('is-active', btn.dataset.theme === theme);
+      });
+      try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* 저장 불가 시 무시 */ }
+    }
+
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applyTheme(btn.dataset.theme);
+      });
+    });
+
+    var saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch (e) { /* 무시 */ }
+    applyTheme(saved || 'light');
+  })();
+
+  if (!stage || !bookEl || typeof St === 'undefined') {
     showError('이북을 불러오지 못했어요. 새로고침해 주세요.');
     return;
   }
-
-  pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
 
   var pageFlip = null;
 
@@ -40,32 +70,6 @@
     err.className = 'pr-error';
     err.textContent = message;
     stage.appendChild(err);
-  }
-
-  function renderPageToDataUrl(pdfDoc, pageNumber) {
-    return pdfDoc.getPage(pageNumber).then(function (page) {
-      var baseViewport = page.getViewport({ scale: 1 });
-      var scale = RENDER_TARGET_WIDTH / baseViewport.width;
-      var viewport = page.getViewport({ scale: scale });
-
-      var canvas = document.createElement('canvas');
-      // ceil을 쓰면 캔버스가 실제 렌더 영역보다 미세하게 커져서, 안 그려진 가장자리가
-      // JPEG 변환 시 흰 줄로 남는다 (투명 픽셀 -> 흰색). floor로 캔버스를 실제 영역 이하로 잡는다.
-      canvas.width = Math.floor(viewport.width);
-      canvas.height = Math.floor(viewport.height);
-      var ctx = canvas.getContext('2d');
-
-      return page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function () {
-        var aspect = viewport.width / viewport.height;
-        // PNG(무손실)는 사진이 섞인 페이지에서 용량이 급격히 커지고 인코딩도 오래 걸려서
-        // (47페이지 기준 40초 이상) 실사용에 부적합했다. 대신 JPEG 품질을 크게 올려서
-        // 글자 뭉개짐(링잉 아티팩트)을 최소화하는 쪽으로 절충한다.
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.97);
-        canvas.width = 0;
-        canvas.height = 0;
-        return { dataUrl: dataUrl, aspect: aspect };
-      });
-    });
   }
 
   function sizeBookToStage(aspect) {
@@ -98,6 +102,25 @@
       minHeight: Math.round(height * 0.6),
       maxHeight: height
     };
+  }
+
+  // St.PageFlip은 캔버스 해상도를 CSS 픽셀 크기 그대로(1:1) 설정해서, 레티나/고해상도
+  // 화면에서는 실제 화면 해상도보다 낮게 그려진 뒤 확대되어 텍스트가 흐려 보인다.
+  // 캔버스의 실제 픽셀 수를 devicePixelRatio만큼 늘리고 그만큼 컨텍스트를 스케일해서
+  // 라이브러리가 같은 좌표로 그리더라도 고해상도로 렌더링되게 만든다.
+  function applyRetinaCanvas(containerEl) {
+    if (!containerEl) return;
+    var canvas = containerEl.querySelector('canvas.stf__canvas');
+    if (!canvas) return;
+    var dpr = window.devicePixelRatio || 1;
+    if (dpr <= 1) return;
+    var cssWidth = canvas.clientWidth;
+    var cssHeight = canvas.clientHeight;
+    if (!cssWidth || !cssHeight) return;
+    canvas.width = Math.round(cssWidth * dpr);
+    canvas.height = Math.round(cssHeight * dpr);
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   function updateIndicator(pageIndex, totalPages) {
@@ -142,10 +165,10 @@
     });
   }
 
-  function setActiveIndexTab(pageIndex) {
-    // 스프레드 모드에서는 pageIndex(왼쪽)와 그 오른쪽 페이지(pageIndex+1)가 함께 보이므로,
-    // 오른쪽 페이지에 챕터가 시작하는 경우도 그 챕터를 활성화 표시해야 한다.
-    var visibleIndex = pageIndex + 1;
+  function setActiveIndexTab(realPageIndex) {
+    // 스프레드 모드에서는 realPageIndex(왼쪽)와 그 오른쪽 페이지(+1)가 동시에 보이므로,
+    // 오른쪽 페이지에서 챕터가 시작해도 그 챕터를 활성화 표시해야 한다.
+    var visibleIndex = realPageIndex + 1;
     var activeTab = null;
     for (var i = 0; i < indexTabs.length; i++) {
       if (Number(indexTabs[i].dataset.pageIndex) <= visibleIndex) {
@@ -170,6 +193,7 @@
   var pageAspect = 0.7;
   var pageCount = 0;
   var lastDims = null;
+  var bookReady = false;
 
   function buildBook(startIndex) {
     var dims = sizeBookToStage(pageAspect);
@@ -181,6 +205,7 @@
       return;
     }
     lastDims = dims;
+    bookReady = false;
 
     if (pageFlip) {
       // destroy()가 컨테이너 엘리먼트 자체를 DOM에서 제거하므로, 매번 새 컨테이너를
@@ -216,6 +241,7 @@
     });
 
     pageFlip.loadFromImages(pageImages);
+    applyRetinaCanvas(freshBookEl);
 
     // 콜백이 실행될 때는 buildBook()이 다시 호출되어 바깥의 bookEl/pageFlip이
     // 이미 다른 값으로 바뀌어 있을 수 있으므로, 이 호출에서 만든 요소를 직접 캡처해서 쓴다.
@@ -229,8 +255,13 @@
       // turnToPage를 쓴다. flip()은 애니메이션 상태를 가지는데, 리사이즈가 짧은 간격으로
       // 연달아 발생하면 flip 도중 currentPageIndex가 불안정해져서 페이지가 계속
       // 앞으로 튀는 문제가 있었다.
-      if (startIndex) thisPageFlip.turnToPage(startIndex);
+      // startIndex가 0(표지)일 때 `if(startIndex)`는 false라 복귀 호출을 건너뛰었고,
+      // 그러면 새 인스턴스가 기본 시작 위치로 초기화되며 표지에서 리사이즈할 때마다
+      // 페이지가 한 칸씩 밀리는 버그가 있었다. 0도 유효한 페이지이므로 명시적으로 비교한다.
+      if (startIndex !== undefined && startIndex !== null) thisPageFlip.turnToPage(startIndex);
+      applyRetinaCanvas(thisBookEl);
       updateIndicator(thisPageFlip.getCurrentPageIndex(), pageCount);
+      bookReady = true;
     });
 
     thisPageFlip.on('flip', function (e) {
@@ -239,24 +270,26 @@
     });
   }
 
-  pdfjsLib.getDocument(PDF_URL).promise.then(function (pdfDoc) {
-    pageCount = pdfDoc.numPages;
-    var pagePromises = [];
-    for (var i = 1; i <= pageCount; i++) {
-      pagePromises.push(renderPageToDataUrl(pdfDoc, i));
+  pageCount = PAGE_COUNT;
+  pageImages = [];
+  for (var i = 1; i <= PAGE_COUNT; i++) {
+    pageImages.push(pageUrl(i));
+  }
+
+  // 첫 페이지 이미지의 실제 가로세로 비율을 읽어서 책 크기를 계산한다.
+  var probe = new Image();
+  probe.onload = function () {
+    if (probe.naturalWidth && probe.naturalHeight) {
+      pageAspect = probe.naturalWidth / probe.naturalHeight;
     }
-
-    return Promise.all(pagePromises).then(function (rendered) {
-      pageImages = rendered.map(function (r) { return r.dataUrl; });
-      pageAspect = rendered[0] ? rendered[0].aspect : 0.7;
-
-      buildIndexRail(pageCount);
-      buildBook();
-    });
-  }).catch(function (err) {
-    console.error(err);
-    showError('PDF를 불러오는 중 문제가 발생했어요.');
-  });
+    buildIndexRail(pageCount);
+    buildBook();
+  };
+  probe.onerror = function () {
+    console.error('페이지 이미지를 불러오지 못했습니다:', pageImages[0]);
+    showError('이북을 불러오는 중 문제가 발생했어요.');
+  };
+  probe.src = pageImages[0];
 
   if (prevBtn) {
     prevBtn.addEventListener('click', function () {
@@ -282,9 +315,15 @@
   window.addEventListener('resize', function () {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
-      if (pageFlip && pageImages) {
+      // 이전 buildBook()의 loadFromImages/init이 아직 안 끝났는데 리사이즈로 또
+      // buildBook()을 부르면, 초기화 안 된 인스턴스에서 getCurrentPageIndex()를 읽어
+      // 엉뚱한 페이지로 이동해버리는 문제가 있었다. 완전히 준비된 뒤에만 재실행한다.
+      if (pageFlip && pageImages && bookReady) {
         var currentIndex = pageFlip.getCurrentPageIndex();
         buildBook(currentIndex);
+        // buildBook()이 크기 차이가 미미해 재생성을 건너뛴 경우, 라이브러리 자체의
+        // resize 핸들러가 이미 캔버스를 1:1 해상도로 되돌려놨을 수 있어 다시 보정한다.
+        applyRetinaCanvas(bookEl);
       }
     }, 200);
   });
