@@ -21,6 +21,21 @@
     { title: '영점 조준의 시대', shortTitle: '영점조준', page: 79, color: '#cdd3f7', textColor: '#3d4a9e' }
   ];
 
+  // 모바일 브라우저(특히 카카오톡 등 인앱 브라우저)는 100dvh를 지원 안 하거나 주소창이
+  // 나타날 때 실제 화면 높이가 바뀌는데, CSS만으로는 못 잡는 경우가 있어 JS로 실제
+  // window.innerHeight를 --vh 변수로 계속 갱신해서 css의 calc(var(--vh)*100)이 쓰게 한다.
+  (function setupViewportHeightVar() {
+    function update() {
+      document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
+    }
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', update);
+    }
+  })();
+
   var stage = document.getElementById('pr-stage');
   var bookEl = document.getElementById('pr-book');
   var loadingEl = document.getElementById('pr-loading');
