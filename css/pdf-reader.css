@@ -128,6 +128,7 @@ body {
   min-height: 0;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 16px;
@@ -138,9 +139,18 @@ body {
   transition: background-color 0.2s ease;
 }
 
+/* 앞/뒤 표지는 한 페이지만 보여줘야 하므로, 책 전체 폭(2페이지 스프레드) 중
+   보여줄 절반만 남기고 나머지는 잘라낸다. 실제 책 크기 자체는 그대로 두고
+   보이는 영역만 좁히는 방식이라 폭 계산이 꼬이지 않는다. */
+.pr-book-crop {
+  width: 100%;
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+
 .pr-book {
   opacity: 0;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.4s ease, margin-left 0.2s ease;
 }
 
 .pr-book.is-ready {
@@ -293,77 +303,72 @@ body {
   }
 }
 
-/* 목차 (책갈피 탭 - 항상 화면 오른쪽 가장자리에 표시) */
+/* 목차 (책 위에 꽂힌 색인 탭처럼, 책 상단에 붙여서 표시. 탭 6개가 항상 책 너비
+   안에서 균등하게 나뉘어 스크롤 없이 한 번에 다 보이게 한다) */
 
-.pr-index-rail {
-  position: fixed;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-  z-index: 15;
+.pr-index-top {
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: calc(100% - var(--controls-height) - 32px);
-  padding: 8px 0;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-
-.pr-index-rail::-webkit-scrollbar {
-  display: none;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0 4px;
+  margin-bottom: -1px;
 }
 
 .pr-index-tab {
   position: relative;
-  flex: 0 0 auto;
-  width: 108px;
-  padding: 11px 14px 11px 16px;
-  display: flex;
-  align-items: center;
-  border-radius: 10px 0 0 10px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 0.75rem;
-  line-height: 1.35;
-  font-weight: 600;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 6px 7px;
+  border-radius: 8px 8px 0 0;
+  background: var(--tab-color, var(--color-accent));
+  color: var(--tab-text, #ffffff);
+  font-size: 0.6875rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
-  text-align: left;
-  white-space: normal;
-  border-left: 3px solid var(--tab-color, var(--color-accent));
-  box-shadow: -3px 2px 10px rgba(17, 24, 39, 0.1);
-  transform: translateX(30px);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.65;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+  transform: translateY(7px);
+  transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pr-index-tab__short {
+  display: none;
 }
 
 .pr-index-tab:hover,
 .pr-index-tab:focus-visible {
-  transform: translateX(0);
+  opacity: 0.85;
+  transform: translateY(3px);
 }
 
 .pr-index-tab.is-active {
-  transform: translateX(0);
-  background: var(--tab-color, var(--color-accent));
-  color: #ffffff;
-  border-left-color: rgba(255, 255, 255, 0.55);
-  box-shadow: -4px 3px 14px rgba(17, 24, 39, 0.22);
+  opacity: 1;
+  transform: translateY(0);
+  box-shadow: 0 4px 10px -4px rgba(17, 24, 39, 0.28), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
 }
 
 @media (max-width: 640px) {
-  .pr-index-tab {
-    width: 84px;
-    padding: 9px 10px 9px 12px;
-    font-size: 0.6875rem;
-    transform: translateX(26px);
+  .pr-index-top {
+    gap: 3px;
   }
-}
 
-/* 모바일에서는 호버가 없어서 목차 탭이 항상 반쯤 나와 있는 상태라, 책 오른쪽을
-   가리지 않도록 그만큼 여백을 비워두고 그 안에서만 탭이 보이게 한다. */
-@media (max-width: 640px) {
-  .pr-stage {
-    justify-content: flex-start;
-    padding-right: 64px;
+  .pr-index-tab {
+    padding: 6px 3px 6px;
+    font-size: 0.625rem;
+  }
+
+  /* 좁은 화면에서는 원래 제목 대신 짧은 이름으로 바꿔서 잘리지 않고 다 보이게 한다 */
+  .pr-index-tab__full {
+    display: none;
+  }
+
+  .pr-index-tab__short {
+    display: inline;
   }
 }
 
