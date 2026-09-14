@@ -22,24 +22,19 @@ body[data-theme="dark"] {
   --color-border: #34353c;
 }
 
-/* 일러스트 배경 모드 — 실제 일러스트 파일을 받으면 아래 --stage-bg-image 경로만 바꾸면 됨 */
+/* 일러스트 배경 모드 — 클라이언트가 보내준 그라디언트 배경 이미지 적용.
+   --color-bg는 .pr-btn 배경/아이콘색과도 얽혀 있어서(둘 다 var(--color-text)를
+   씀) 너무 어둡게 바꾸면 흰 배경 위 버튼들 대비가 깨진다. 그래서 배경 톤은 밝게
+   유지하고, 무대(.pr-stage)의 그라디언트 이미지로만 일러스트 느낌을 낸다. */
 body[data-theme="illustration"] {
-  --color-bg: #efe6d8;
-  --color-surface: #fffaf2;
-  --color-text: #2b2118;
-  --color-text-muted: #7a6c58;
-  --color-accent: #b3551f;
-  --color-accent-hover: #8a4118;
-  --color-border: #e0d2ba;
-  /* TODO: 클라이언트가 보내는 책 일러스트로 교체
-     --stage-bg-image: url('../images/theme-illustration.jpg'); */
-  --stage-bg-image: repeating-linear-gradient(
-    135deg,
-    rgba(179, 85, 31, 0.06),
-    rgba(179, 85, 31, 0.06) 18px,
-    rgba(179, 85, 31, 0.12) 18px,
-    rgba(179, 85, 31, 0.12) 36px
-  );
+  --color-bg: #f2f0f7;
+  --color-surface: #ffffff;
+  --color-text: #201a3d;
+  --color-text-muted: #756e99;
+  --color-accent: #7a5cff;
+  --color-accent-hover: #6247e0;
+  --color-border: #e3e0f0;
+  --stage-bg-image: url('../images/theme-illustration.jpg');
 }
 
 @font-face {
