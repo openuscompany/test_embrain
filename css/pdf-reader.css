@@ -306,6 +306,12 @@ body {
 /* 목차 (책 위에 꽂힌 색인 탭처럼, 책 상단에 붙여서 표시. 탭 6개가 항상 책 너비
    안에서 균등하게 나뉘어 스크롤 없이 한 번에 다 보이게 한다) */
 
+/* 바깥 nav: 항상 현재 보여지는 책 폭(스프레드 전체 또는 표지 크롭 폭)과 같은
+   크기로 JS가 맞춰준다. 실제 탭 정렬은 안쪽 .pr-index-top이 담당한다. */
+.pr-index-rail {
+  width: 100%;
+}
+
 .pr-index-top {
   width: 100%;
   display: flex;
@@ -313,6 +319,14 @@ body {
   gap: 4px;
   padding: 0 4px;
   margin-bottom: -1px;
+  transition: width 0.2s ease;
+}
+
+/* PC에서 2페이지가 나란히 펼쳐질 때는, 목차를 스프레드 전체가 아니라 오른쪽
+   페이지 폭에만 맞춰 그 페이지 바로 위에 붙인다(왼쪽 페이지 위는 비워둠). */
+.pr-index-top.is-page-right {
+  width: 50%;
+  margin-left: auto;
 }
 
 .pr-index-tab {
