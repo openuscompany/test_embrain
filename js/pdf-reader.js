@@ -148,6 +148,11 @@
     canvas.height = Math.round(cssHeight * dpr);
     var ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // width/height를 다시 설정하면 캔버스 컨텍스트 상태가 초기화되는데, 브라우저
+    // 기본 이미지 스무딩 품질이 'low'라서 원본 이미지를 줄여 그릴 때 필요 이상으로
+    // 뭉개져 보인다. 'high'로 올려서 축소 시에도 선명하게 유지한다.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
   }
 
   // 상단 목차 탭이 책 너비를 넘어가지 않도록, 실제로 보여지는 책의 폭(표지에서는
