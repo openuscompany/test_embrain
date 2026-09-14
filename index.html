@@ -6,14 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>2027 트렌드모니터 (이북)</title>
   <link rel="stylesheet" href="css/reset.css">
-  <link rel="stylesheet" href="css/pdf-reader.css?v=41">
+  <link rel="stylesheet" href="css/pdf-reader.css?v=48">
 </head>
 
 <body class="pdf-reader" data-theme="light">
 
   <div class="pr-wrapper">
-
-    <nav class="pr-index-rail" id="pr-index-rail" aria-label="목차"></nav>
 
     <div class="pr-theme-switcher" id="pr-theme-switcher" role="group" aria-label="화면 테마 선택">
       <button type="button" class="pr-theme-btn" data-theme="light" aria-label="밝은 모드">
@@ -28,11 +26,14 @@
     </div>
 
     <div class="pr-stage" id="pr-stage">
+      <nav class="pr-index-top" id="pr-index-rail" aria-label="목차"></nav>
       <div class="pr-loading" id="pr-loading">
         <div class="pr-spinner"></div>
         <p>이북을 준비하고 있어요…</p>
       </div>
-      <div class="pr-book" id="pr-book"></div>
+      <div class="pr-book-crop" id="pr-book-crop">
+        <div class="pr-book" id="pr-book"></div>
+      </div>
     </div>
 
     <div class="pr-controls">
@@ -56,7 +57,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
-  <script src="js/pdf-reader.js?v=41"></script>
+  <script src="js/pdf-reader.js?v=48"></script>
 </body>
 
 </html>
