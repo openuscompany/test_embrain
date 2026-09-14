@@ -105,7 +105,12 @@
     var pageW = Math.min(availW / 2, availH * aspect);
     var pageH = pageW / aspect;
 
-    if (pageW < 220) {
+    // 계산된 페이지 폭(pageW)이 아니라 뷰포트 자체의 폭으로 모바일/PC를 가른다.
+    // pageW는 화면비·스크롤바 폭 등 브라우저마다 미묘하게 다른 값들이 섞여 계산되기
+    // 때문에, 경계값 근처에서는 크롬/엣지 등 브라우저에 따라 한 페이지 모드와
+    // 두 페이지 모드가 다르게 나오는 문제가 있었다. 뷰포트 폭(모바일 CSS 분기와
+    // 동일한 640px 기준)으로만 판단해야 PC에서는 항상 두 페이지로 통일된다.
+    if (stageRect.width < 640) {
       // 화면이 좁으면 한 페이지만 보이는 모드에 맞춰 폭을 계산
       pageW = Math.min(availW, availH * aspect);
       pageH = pageW / aspect;
@@ -138,9 +143,9 @@
     if (!canvas) return;
     // PC의 OS 디스플레이 배율이 125%/150% 같은 정수가 아닌 값이면 devicePixelRatio도
     // 소수(예: 1.25)가 되는데, 그 값 그대로만 맞추면 배율 자체가 낮아서 약간 뭉개져
-    // 보인다. 원본 페이지 이미지가 실제 표시 크기보다 해상도가 충분히 높으므로
-    // (1725x2552), dpr이 낮거나 1이어도 최소 2배로 그려서 항상 선명하게 만든다.
-    var dpr = Math.max(2, window.devicePixelRatio || 1);
+    // 보인다. 원본 페이지 이미지가 1725px로 충분히 고해상도라서, dpr이 낮거나 1이어도
+    // 최소 3배로 그려 원본 해상도에 최대한 가깝게 만든다(핀치 줌 여유도 더 생긴다).
+    var dpr = Math.max(3, window.devicePixelRatio || 1);
     var cssWidth = canvas.clientWidth;
     var cssHeight = canvas.clientHeight;
     if (!cssWidth || !cssHeight) return;
@@ -235,7 +240,9 @@
       tab.dataset.pageIndex = String(pageIndex);
 
       tab.addEventListener('click', function () {
-        if (pageFlip) pageFlip.flip(pageIndex);
+        // flip()은 종이 넘기는 애니메이션이 있어서 느리게 느껴진다는 피드백이 있어,
+        // 애니메이션 없이 바로 전환되는 turnToPage()를 쓴다.
+        if (pageFlip) pageFlip.turnToPage(pageIndex);
         hideHintOnce();
       });
 
@@ -375,24 +382,27 @@
   };
   probe.src = pageImages[0];
 
+  // flipNext()/flipPrev()는 종이 넘기는 애니메이션이 있어서 느리게 느껴진다는
+  // 피드백이 있어, 버튼/키보드 이동은 애니메이션 없는 turnToNextPage()/
+  // turnToPrevPage()로 바꿨다(모서리를 직접 드래그하는 제스처는 그대로 애니메이션 유지).
   if (prevBtn) {
     prevBtn.addEventListener('click', function () {
-      if (pageFlip) pageFlip.flipPrev();
+      if (pageFlip) pageFlip.turnToPrevPage();
       hideHintOnce();
     });
   }
 
   if (nextBtn) {
     nextBtn.addEventListener('click', function () {
-      if (pageFlip) pageFlip.flipNext();
+      if (pageFlip) pageFlip.turnToNextPage();
       hideHintOnce();
     });
   }
 
   document.addEventListener('keydown', function (event) {
     if (!pageFlip) return;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') pageFlip.flipNext();
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') pageFlip.flipPrev();
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') pageFlip.turnToNextPage();
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') pageFlip.turnToPrevPage();
   });
 
   var resizeTimer = null;
