@@ -57,6 +57,9 @@
     var buttons = switcherEl.querySelectorAll('.pr-theme-btn');
 
     function applyTheme(theme) {
+      // body뿐 아니라 html에도 걸어둬야, html의 배경색(--color-bg)도 테마에 맞게
+      // 바뀌어서 모바일에서 화면 위/아래에 이전 테마 색(주로 흰색) 줄이 안 비친다.
+      document.documentElement.setAttribute('data-theme', theme);
       document.body.setAttribute('data-theme', theme);
       buttons.forEach(function (btn) {
         btn.classList.toggle('is-active', btn.dataset.theme === theme);
