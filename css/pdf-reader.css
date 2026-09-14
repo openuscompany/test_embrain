@@ -72,25 +72,22 @@ body {
   flex-direction: column;
 }
 
-/* 테마 전환 버튼 (좌상단 플로팅) */
+/* 테마 전환 버튼 — 하단 컨트롤 바 오른쪽 끝에 배치 (예전엔 화면 좌상단에 떠 있었지만,
+   모바일에서 화면이 낮아지면 상단 목차 탭과 겹치는 문제가 있어 하단 바로 옮겼다) */
 
 .pr-theme-switcher {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 20;
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   gap: 6px;
-  padding: 5px;
+  padding: 4px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: var(--color-bg);
 }
 
 .pr-theme-btn {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   padding: 2px;
   display: flex;
@@ -101,7 +98,7 @@ body {
 }
 
 .pr-theme-btn.is-active {
-  border-color: #ffffff;
+  border-color: var(--color-accent);
 }
 
 .pr-theme-btn__swatch {
@@ -223,13 +220,45 @@ body {
 
 .pr-controls {
   flex: 0 0 var(--controls-height);
-  display: flex;
+  display: grid;
+  /* 좌우 칸을 테마 버튼 폭(약 96px) 이상으로 똑같이 맞춰둬야, 오른쪽에만 있는
+     테마 버튼 때문에 가운데 페이지 넘김 버튼이 한쪽으로 쏠리지 않는다. */
+  grid-template-columns: minmax(96px, 1fr) auto minmax(96px, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: 24px;
+  padding: 0 16px;
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
   transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.pr-controls__nav {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+@media (max-width: 640px) {
+  .pr-controls {
+    /* 좁은 화면에서는 96px 최소폭 두 개 + 가운데 버튼들 폭을 합치면 화면보다 넓어져서
+       테마 버튼이 오른쪽 밖으로 잘려 나가는 문제가 있어, 최소폭을 줄인다. */
+    grid-template-columns: minmax(52px, 1fr) auto minmax(52px, 1fr);
+    padding: 0 10px;
+  }
+
+  .pr-controls__nav {
+    gap: 14px;
+  }
+
+  .pr-theme-switcher {
+    gap: 4px;
+    padding: 3px;
+  }
+
+  .pr-theme-btn {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .pr-btn {
