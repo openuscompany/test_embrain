@@ -11,8 +11,10 @@
   --stage-bg-image: none;
 }
 
-/* 다크 모드 — 책장(페이지 이미지)은 원래 흰 배경 그대로 두고, 주변 화면만 어둡게 */
-body[data-theme="dark"] {
+/* 다크 모드 — 책장(페이지 이미지)은 원래 흰 배경 그대로 두고, 주변 화면만 어둡게.
+   html에 걸어둬서 html 자신의 배경색도 같이 바뀌게 한다(자식인 body는 상속받음) —
+   그래야 모바일에서 화면 위/아래에 이전 테마 색(흰 배경 등) 줄이 안 비친다. */
+html[data-theme="dark"] {
   --color-bg: #17181c;
   --color-surface: #212227;
   --color-text: #f1f1f2;
@@ -26,7 +28,7 @@ body[data-theme="dark"] {
    --color-bg는 .pr-btn 배경/아이콘색과도 얽혀 있어서(둘 다 var(--color-text)를
    씀) 너무 어둡게 바꾸면 흰 배경 위 버튼들 대비가 깨진다. 그래서 배경 톤은 밝게
    유지하고, 무대(.pr-stage)의 그라디언트 이미지로만 일러스트 느낌을 낸다. */
-body[data-theme="illustration"] {
+html[data-theme="illustration"] {
   --color-bg: #f2f0f7;
   --color-surface: #ffffff;
   --color-text: #201a3d;
@@ -54,6 +56,10 @@ html, body {
      실제 window.innerHeight 기준으로 --vh를 계속 갱신해준다(pdf-reader.js 참고). */
   height: calc(var(--vh, 1vh) * 100);
   overflow: hidden;
+  /* vh 계산이 소수점 반올림 때문에 실제 화면보다 1px 정도 모자랄 때가 있는데, 그때
+     html 기본 배경(흰색)이 위/아래로 살짝 비쳐 보인다. body와 같은 색으로 맞춰서
+     그 틈이 보여도 티가 안 나게 한다. */
+  background: var(--color-bg);
 }
 
 body {
@@ -119,7 +125,9 @@ body {
 }
 
 .pr-theme-btn__swatch--illustration {
-  background: linear-gradient(135deg, #efe6d8 50%, #b3551f 50%);
+  background-image: url('../images/theme-illustration.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
 /* Stage */
