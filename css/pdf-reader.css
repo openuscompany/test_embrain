@@ -6,7 +6,7 @@
   --color-accent: #0066b3;
   --color-accent-hover: #004d88;
   --color-border: #e5e7eb;
-  --controls-height: 72px;
+  --controls-height: 64px;
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --stage-bg-image: none;
 }
@@ -55,7 +55,12 @@ html, body {
   /* 카카오톡 인앱 브라우저 등 100dvh를 지원하지 않는 환경을 위한 안전망. JS가
      실제 window.innerHeight 기준으로 --vh를 계속 갱신해준다(pdf-reader.js 참고). */
   height: calc(var(--vh, 1vh) * 100);
-  overflow: hidden;
+  /* 삼성 인터넷처럼 고정 하단 탭바가 있는 브라우저는 window.innerHeight가 그 탭바
+     공간까지 포함해버려서, 계산한 높이가 실제 보이는 영역보다 커질 수 있다. 그러면
+     하단 버튼 줄이 화면 밖으로 밀리는데, overflow:hidden이면 스크롤도 안 돼서
+     아예 접근할 방법이 없어진다. auto로 바꿔서 최소한 살짝 스크롤은 되게 한다. */
+  overflow-y: auto;
+  overflow-x: hidden;
   /* vh 계산이 소수점 반올림 때문에 실제 화면보다 1px 정도 모자랄 때가 있는데, 그때
      html 기본 배경(흰색)이 위/아래로 살짝 비쳐 보인다. body와 같은 색으로 맞춰서
      그 틈이 보여도 티가 안 나게 한다. */
