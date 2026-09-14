@@ -70,6 +70,9 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
+  /* 가로 모드일 때는 노치가 좌우에 걸쳐 있을 수 있어 좌우 안전 여백도 같이 챙긴다. */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* 테마 전환 버튼 — 하단 컨트롤 바 오른쪽 끝에 배치 (예전엔 화면 좌상단에 떠 있었지만,
@@ -219,13 +222,17 @@ body {
 /* Controls */
 
 .pr-controls {
-  flex: 0 0 var(--controls-height);
+  /* index.html이 viewport-fit=cover라 화면이 홈 인디케이터 아래까지 그려지는데,
+     그만큼 안전 여백(env(safe-area-inset-bottom))을 안 더해주면 아이폰 실기기에서
+     하단 버튼 줄이 홈 인디케이터에 가려 잘려 보인다. 높이에 그 여백만큼 더 얹어준다. */
+  flex: 0 0 calc(var(--controls-height) + env(safe-area-inset-bottom, 0px));
   display: grid;
   /* 좌우 칸을 테마 버튼 폭(약 96px) 이상으로 똑같이 맞춰둬야, 오른쪽에만 있는
      테마 버튼 때문에 가운데 페이지 넘김 버튼이 한쪽으로 쏠리지 않는다. */
   grid-template-columns: minmax(96px, 1fr) auto minmax(96px, 1fr);
   align-items: center;
   padding: 0 16px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
   transition: background-color 0.2s ease, border-color 0.2s ease;
