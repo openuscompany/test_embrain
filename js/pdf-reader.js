@@ -323,7 +323,10 @@
       showCover: true,
       usePortrait: true,
       mobileScrollSupport: false,
-      useMouseEvents: true
+      useMouseEvents: true,
+      // 모서리를 드래그해서 넘길 때의 애니메이션 속도. 기본값(1000ms)이 느리다는
+      // 피드백이 있어 훨씬 빠르게 줄였다(버튼/목차 클릭은 애니메이션 없이 즉시 전환).
+      flippingTime: 250
     });
 
     pageFlip.loadFromImages(pageImages);
