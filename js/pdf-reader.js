@@ -136,8 +136,11 @@
     if (!containerEl) return;
     var canvas = containerEl.querySelector('canvas.stf__canvas');
     if (!canvas) return;
-    var dpr = window.devicePixelRatio || 1;
-    if (dpr <= 1) return;
+    // PC의 OS 디스플레이 배율이 125%/150% 같은 정수가 아닌 값이면 devicePixelRatio도
+    // 소수(예: 1.25)가 되는데, 그 값 그대로만 맞추면 배율 자체가 낮아서 약간 뭉개져
+    // 보인다. 원본 페이지 이미지가 실제 표시 크기보다 해상도가 충분히 높으므로
+    // (1725x2552), dpr이 낮거나 1이어도 최소 2배로 그려서 항상 선명하게 만든다.
+    var dpr = Math.max(2, window.devicePixelRatio || 1);
     var cssWidth = canvas.clientWidth;
     var cssHeight = canvas.clientHeight;
     if (!cssWidth || !cssHeight) return;
