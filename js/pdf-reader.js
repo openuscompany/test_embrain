@@ -30,6 +30,7 @@
   var currentEl = document.querySelector('.pr-indicator__current');
   var totalEl = document.querySelector('.pr-indicator__total');
   var indexRail = document.getElementById('pr-index-rail');
+  var indexTabsEl = document.getElementById('pr-index-tabs');
   var bookCropEl = document.getElementById('pr-book-crop');
 
   // 테마 전환 (밝은 모드 / 다크 모드 / 일러스트 배경). 책 페이지 이미지 자체는 그대로 두고
@@ -130,11 +131,12 @@
 
   // 상단 목차 탭이 책 너비를 넘어가지 않도록, 실제로 보여지는 책의 폭(표지에서는
   // 크롭된 절반 폭)에 맞춰 목차 바의 최대 너비를 맞춰준다.
-  function syncTopBarWidth(containerEl) {
-    if (!indexRail || !containerEl) return;
-    var bookWidth = containerEl.offsetWidth;
-    if (!bookWidth) return;
-    indexRail.style.maxWidth = bookWidth + 'px';
+  // widthPx는 미리 계산해둔 숫자를 그대로 받는다 — bookCropEl은 width에 transition이
+  // 걸려 있어서, 값을 바꾼 直후 offsetWidth를 다시 읽으면 트랜지션 시작 전(이전) 값이
+  // 나오는 경우가 있어 새로 측정하지 않고 이미 아는 값을 그대로 쓴다.
+  function syncTopBarWidth(widthPx) {
+    if (!indexRail || !widthPx) return;
+    indexRail.style.maxWidth = Math.round(widthPx) + 'px';
   }
 
   // 앞표지(0페이지)·뒤표지(마지막 페이지)는 스프레드가 아니라 한 페이지만 있으므로,
@@ -143,6 +145,9 @@
   // 페이지 넘김 애니메이션이나 폭 계산에는 영향을 주지 않는다.
   // 모바일처럼 한 페이지씩만 보이는 portrait 모드에서는 애초에 빈 절반이 없고 페이지
   // 내용이 컨테이너 전체를 채우므로, landscape(2페이지 스프레드) 모드에서만 크롭한다.
+  // 목차 바도 같이 처리한다: 일반 스프레드(2페이지)에서는 오른쪽 페이지 폭에만 맞춰
+  // 그 페이지 위에 붙이고, 표지(1페이지)나 모바일(portrait, 항상 1페이지)에서는
+  // 보이는 페이지 폭 그대로 맞춘다.
   function applyCoverCrop(pageIndex, totalPages) {
     if (!bookCropEl || !bookEl) return;
     var fullWidth = parseFloat(bookEl.style.width) || bookEl.offsetWidth;
@@ -150,17 +155,22 @@
     var isLandscape = pageFlip && pageFlip.getOrientation() === 'landscape';
     var isFront = pageIndex === 0;
     var isBack = pageIndex === totalPages - 1;
+    var isCoverSolo = isLandscape && (isFront || isBack);
 
-    if (isLandscape && (isFront || isBack)) {
+    if (isCoverSolo) {
       var half = Math.round(fullWidth / 2);
       bookCropEl.style.width = half + 'px';
       bookEl.style.marginLeft = isFront ? -half + 'px' : '0px';
+      syncTopBarWidth(half);
     } else {
       bookCropEl.style.width = fullWidth + 'px';
       bookEl.style.marginLeft = '0px';
+      syncTopBarWidth(fullWidth);
     }
 
-    syncTopBarWidth(bookCropEl);
+    if (indexTabsEl) {
+      indexTabsEl.classList.toggle('is-page-right', isLandscape && !isCoverSolo);
+    }
   }
 
   function updateIndicator(pageIndex, totalPages) {
@@ -180,8 +190,8 @@
   var indexTabs = [];
 
   function buildIndexRail(numPages) {
-    if (!indexRail) return;
-    indexRail.innerHTML = '';
+    if (!indexTabsEl) return;
+    indexTabsEl.innerHTML = '';
     indexTabs = [];
 
     CHAPTERS.forEach(function (chapter) {
@@ -203,7 +213,7 @@
         hideHintOnce();
       });
 
-      indexRail.appendChild(tab);
+      indexTabsEl.appendChild(tab);
       indexTabs.push(tab);
     });
   }
