@@ -6,24 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>2027 트렌드모니터 (이북)</title>
   <link rel="stylesheet" href="css/reset.css">
-  <link rel="stylesheet" href="css/pdf-reader.css?v=50">
+  <link rel="stylesheet" href="css/pdf-reader.css?v=52">
 </head>
 
 <body class="pdf-reader" data-theme="light">
 
   <div class="pr-wrapper">
-
-    <div class="pr-theme-switcher" id="pr-theme-switcher" role="group" aria-label="화면 테마 선택">
-      <button type="button" class="pr-theme-btn" data-theme="light" aria-label="밝은 모드">
-        <span class="pr-theme-btn__swatch pr-theme-btn__swatch--light"></span>
-      </button>
-      <button type="button" class="pr-theme-btn" data-theme="dark" aria-label="다크 모드">
-        <span class="pr-theme-btn__swatch pr-theme-btn__swatch--dark"></span>
-      </button>
-      <button type="button" class="pr-theme-btn" data-theme="illustration" aria-label="일러스트 배경">
-        <span class="pr-theme-btn__swatch pr-theme-btn__swatch--illustration"></span>
-      </button>
-    </div>
 
     <div class="pr-stage" id="pr-stage">
       <nav class="pr-index-rail" id="pr-index-rail" aria-label="목차">
@@ -39,19 +27,33 @@
     </div>
 
     <div class="pr-controls">
-      <button type="button" class="pr-btn pr-btn--prev" id="pr-prev" aria-label="이전 페이지">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+      <div class="pr-controls__nav">
+        <button type="button" class="pr-btn pr-btn--prev" id="pr-prev" aria-label="이전 페이지">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
 
-      <div class="pr-indicator" id="pr-indicator" aria-live="polite">
-        <span class="pr-indicator__current">1</span>
-        <span class="pr-indicator__sep">/</span>
-        <span class="pr-indicator__total">1</span>
+        <div class="pr-indicator" id="pr-indicator" aria-live="polite">
+          <span class="pr-indicator__current">1</span>
+          <span class="pr-indicator__sep">/</span>
+          <span class="pr-indicator__total">1</span>
+        </div>
+
+        <button type="button" class="pr-btn pr-btn--next" id="pr-next" aria-label="다음 페이지">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
 
-      <button type="button" class="pr-btn pr-btn--next" id="pr-next" aria-label="다음 페이지">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+      <div class="pr-theme-switcher" id="pr-theme-switcher" role="group" aria-label="화면 테마 선택">
+        <button type="button" class="pr-theme-btn" data-theme="light" aria-label="밝은 모드">
+          <span class="pr-theme-btn__swatch pr-theme-btn__swatch--light"></span>
+        </button>
+        <button type="button" class="pr-theme-btn" data-theme="dark" aria-label="다크 모드">
+          <span class="pr-theme-btn__swatch pr-theme-btn__swatch--dark"></span>
+        </button>
+        <button type="button" class="pr-theme-btn" data-theme="illustration" aria-label="일러스트 배경">
+          <span class="pr-theme-btn__swatch pr-theme-btn__swatch--illustration"></span>
+        </button>
+      </div>
     </div>
 
     <p class="pr-hint" id="pr-hint">← 좌우로 넘겨보세요, 모서리를 드래그해도 돼요 →</p>
@@ -59,7 +61,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
-  <script src="js/pdf-reader.js?v=49"></script>
+  <script src="js/pdf-reader.js?v=51"></script>
 </body>
 
 </html>
