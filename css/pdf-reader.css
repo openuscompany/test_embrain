@@ -55,6 +55,9 @@ html, body {
      실제 화면(주소창 뺀 나머지)보다 페이지가 더 길어져 하단 버튼이 화면 밖(주소창 뒤)으로
      밀려 안 보이는 문제가 있다. 동적 뷰포트 단위(100dvh)를 지원하면 그걸 우선 쓴다. */
   height: 100dvh;
+  /* 카카오톡 인앱 브라우저 등 100dvh를 지원하지 않는 환경을 위한 안전망. JS가
+     실제 window.innerHeight 기준으로 --vh를 계속 갱신해준다(pdf-reader.js 참고). */
+  height: calc(var(--vh, 1vh) * 100);
   overflow: hidden;
 }
 
