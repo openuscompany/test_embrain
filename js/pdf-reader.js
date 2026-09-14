@@ -10,14 +10,15 @@
   }
 
   // 목차 탭에 표시할 챕터 목록. 다른 자료로 교체할 때는 이 배열도 그 자료의 목차에 맞게 수정하세요.
-  // page: 그 챕터가 시작하는 실제 이미지 페이지 번호(1부터 시작). color: 탭 색상.
+  // page: 그 챕터가 시작하는 실제 이미지 페이지 번호(1부터 시작). color: 탭 배경(파스텔 톤), textColor: 탭 글자색.
+  // shortTitle: 화면이 좁을 때(모바일) 탭 6개가 잘리지 않고 다 보이도록 쓰는 축약 이름.
   var CHAPTERS = [
-    { title: "'영점소비' 시대", page: 10, color: '#000a82' },
-    { title: '1. 마이-파이', page: 31, color: '#00c800' },
-    { title: '2. 언클리셰', page: 45, color: '#00b4ff' },
-    { title: '3. BPM', page: 59, color: '#ff5aaa' },
-    { title: '4. 스탯 맥싱', page: 71, color: '#6464ff' },
-    { title: '영점 조준의 시대', page: 79, color: '#000a82' }
+    { title: "'영점소비' 시대", shortTitle: '영점소비', page: 10, color: '#cdd3f7', textColor: '#3d4a9e' },
+    { title: '1. 마이-파이', shortTitle: '마이파이', page: 31, color: '#c9ead9', textColor: '#2f8a5b' },
+    { title: '2. 언클리셰', shortTitle: '언클리셰', page: 45, color: '#cdeaf3', textColor: '#1f7c9c' },
+    { title: '3. BPM', shortTitle: 'BPM', page: 59, color: '#f6d3e2', textColor: '#b1447a' },
+    { title: '4. 스탯 맥싱', shortTitle: '스탯맥싱', page: 71, color: '#ddd6f7', textColor: '#6249c7' },
+    { title: '영점 조준의 시대', shortTitle: '영점조준', page: 79, color: '#cdd3f7', textColor: '#3d4a9e' }
   ];
 
   var stage = document.getElementById('pr-stage');
@@ -29,6 +30,7 @@
   var currentEl = document.querySelector('.pr-indicator__current');
   var totalEl = document.querySelector('.pr-indicator__total');
   var indexRail = document.getElementById('pr-index-rail');
+  var bookCropEl = document.getElementById('pr-book-crop');
 
   // 테마 전환 (밝은 모드 / 다크 모드 / 일러스트 배경). 책 페이지 이미지 자체는 그대로 두고
   // 주변 화면 색상만 바뀐다. 선택한 테마는 localStorage에 저장해서 다음 방문에도 유지한다.
@@ -74,13 +76,11 @@
 
   function sizeBookToStage(aspect) {
     var stageRect = stage.getBoundingClientRect();
-    // 모바일에서는 목차 탭이 항상 반쯤 나와 있어 책 오른쪽을 가릴 수 있으므로,
-    // CSS의 .pr-stage padding-right(모바일 64px)만큼 책 너비 계산에서도 빼서
-    // 탭이 그 여백 안에서만 보이게 한다.
-    var isNarrow = stageRect.width <= 640;
-    var padRight = isNarrow ? 64 : 16;
-    var availW = Math.max(200, stageRect.width - 16 - padRight);
-    var availH = Math.max(200, stageRect.height - 32);
+    // 목차 탭이 책 위쪽에 한 줄로 붙어 있으므로, 그 실제 높이만큼은 책 높이
+    // 계산에서 빼서 책이 그 아래 남는 공간에 맞춰지게 한다.
+    var indexTopHeight = (indexRail && indexRail.offsetHeight) || 0;
+    var availW = Math.max(200, stageRect.width - 32);
+    var availH = Math.max(200, stageRect.height - 32 - indexTopHeight);
 
     // 두 페이지가 나란히 펼쳐지는 스프레드 기준으로 한 페이지 폭을 계산
     var pageW = Math.min(availW / 2, availH * aspect);
@@ -128,6 +128,41 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
+  // 상단 목차 탭이 책 너비를 넘어가지 않도록, 실제로 보여지는 책의 폭(표지에서는
+  // 크롭된 절반 폭)에 맞춰 목차 바의 최대 너비를 맞춰준다.
+  function syncTopBarWidth(containerEl) {
+    if (!indexRail || !containerEl) return;
+    var bookWidth = containerEl.offsetWidth;
+    if (!bookWidth) return;
+    indexRail.style.maxWidth = bookWidth + 'px';
+  }
+
+  // 앞표지(0페이지)·뒤표지(마지막 페이지)는 스프레드가 아니라 한 페이지만 있으므로,
+  // 책 전체 폭(2페이지 스프레드 기준) 중 그 페이지가 있는 절반만 보이게 잘라내고
+  // 나머지 빈 절반은 숨긴다. 책 자체 크기는 그대로 두고 보이는 영역만 좁히는 방식이라
+  // 페이지 넘김 애니메이션이나 폭 계산에는 영향을 주지 않는다.
+  // 모바일처럼 한 페이지씩만 보이는 portrait 모드에서는 애초에 빈 절반이 없고 페이지
+  // 내용이 컨테이너 전체를 채우므로, landscape(2페이지 스프레드) 모드에서만 크롭한다.
+  function applyCoverCrop(pageIndex, totalPages) {
+    if (!bookCropEl || !bookEl) return;
+    var fullWidth = parseFloat(bookEl.style.width) || bookEl.offsetWidth;
+    if (!fullWidth) return;
+    var isLandscape = pageFlip && pageFlip.getOrientation() === 'landscape';
+    var isFront = pageIndex === 0;
+    var isBack = pageIndex === totalPages - 1;
+
+    if (isLandscape && (isFront || isBack)) {
+      var half = Math.round(fullWidth / 2);
+      bookCropEl.style.width = half + 'px';
+      bookEl.style.marginLeft = isFront ? -half + 'px' : '0px';
+    } else {
+      bookCropEl.style.width = fullWidth + 'px';
+      bookEl.style.marginLeft = '0px';
+    }
+
+    syncTopBarWidth(bookCropEl);
+  }
+
   function updateIndicator(pageIndex, totalPages) {
     if (currentEl) currentEl.textContent = String(pageIndex + 1);
     if (totalEl) totalEl.textContent = String(totalPages);
@@ -155,9 +190,12 @@
       var tab = document.createElement('button');
       tab.type = 'button';
       tab.className = 'pr-index-tab';
-      tab.textContent = chapter.title;
+      tab.innerHTML =
+        '<span class="pr-index-tab__full">' + chapter.title + '</span>' +
+        '<span class="pr-index-tab__short">' + chapter.shortTitle + '</span>';
       tab.setAttribute('aria-label', chapter.title + ' 부분으로 이동');
       tab.style.setProperty('--tab-color', chapter.color);
+      tab.style.setProperty('--tab-text', chapter.textColor);
       tab.dataset.pageIndex = String(pageIndex);
 
       tab.addEventListener('click', function () {
@@ -227,7 +265,7 @@
     var freshBookEl = document.createElement('div');
     freshBookEl.id = 'pr-book';
     freshBookEl.className = 'pr-book';
-    stage.appendChild(freshBookEl);
+    bookCropEl.appendChild(freshBookEl);
     bookEl = freshBookEl;
 
     pageFlip = new St.PageFlip(bookEl, {
@@ -265,11 +303,16 @@
       // 페이지가 한 칸씩 밀리는 버그가 있었다. 0도 유효한 페이지이므로 명시적으로 비교한다.
       if (startIndex !== undefined && startIndex !== null) thisPageFlip.turnToPage(startIndex);
       applyRetinaCanvas(thisBookEl);
-      updateIndicator(thisPageFlip.getCurrentPageIndex(), pageCount);
+      // 표지 크롭 계산 전에 책 폭을 고정 px로 박아둬서, 크롭이 책 자체 크기에 영향 주지 않게 한다.
+      thisBookEl.style.width = thisBookEl.offsetWidth + 'px';
+      var initIndex = thisPageFlip.getCurrentPageIndex();
+      applyCoverCrop(initIndex, pageCount);
+      updateIndicator(initIndex, pageCount);
       bookReady = true;
     });
 
     thisPageFlip.on('flip', function (e) {
+      applyCoverCrop(e.data, pageCount);
       updateIndicator(e.data, pageCount);
       hideHintOnce();
     });
@@ -329,6 +372,7 @@
         // buildBook()이 크기 차이가 미미해 재생성을 건너뛴 경우, 라이브러리 자체의
         // resize 핸들러가 이미 캔버스를 1:1 해상도로 되돌려놨을 수 있어 다시 보정한다.
         applyRetinaCanvas(bookEl);
+        applyCoverCrop(pageFlip.getCurrentPageIndex(), pageCount);
       }
     }, 200);
   });
