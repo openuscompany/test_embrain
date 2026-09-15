@@ -479,6 +479,47 @@ body {
   }
 }
 
+/* 모바일에서는 화면이 좁아 책 오른쪽에 목차를 붙일 자리가 없어서, 대신 책
+   위쪽에 가로로 눕혀 붙인다(예전 작업물의 배치 방식). JS(positionIndexRail)가
+   window.screen.width 기준으로 이 클래스를 붙였다 뗐다 한다 — PC에서 브라우저
+   창을 아무리 좁혀도(또는 확대해도) 이 레이아웃으로 안 바뀌고, 실제 모바일
+   기기에서만 적용된다. 이 아래 규칙들은 위 PC용 규칙들보다 항상 우선해야 하므로
+   일부러 더 구체적인 선택자(.pr-index-rail--top .pr-index-tab)를 쓴다. */
+.pr-index-rail--top {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 3px;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+}
+
+.pr-index-rail--top .pr-index-tab {
+  width: auto;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 5px 3px 6px;
+  border-radius: 8px 8px 0 0;
+  font-size: 0.5625rem;
+  line-height: 1.2;
+  text-align: center;
+  box-shadow: 0 -2px 6px rgba(17, 24, 39, 0.12);
+  opacity: 0.75;
+  transform: translateY(4px);
+}
+
+.pr-index-rail--top .pr-index-tab:hover,
+.pr-index-rail--top .pr-index-tab:focus-visible {
+  opacity: 0.9;
+  transform: translateY(2px);
+}
+
+.pr-index-rail--top .pr-index-tab.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  box-shadow: 0 -4px 10px rgba(17, 24, 39, 0.22);
+}
+
 /* 도구 모음 (좌상단 플로팅) — 확대/축소, 책갈피, 메모 */
 
 .pr-toolbar {
