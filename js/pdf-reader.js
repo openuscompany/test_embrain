@@ -125,8 +125,14 @@
       pageH = pageW / aspect;
     }
 
-    var width = Math.round(pageW);
-    var height = Math.round(pageH);
+    // Windows 디스플레이 배율이 125%/150%처럼 정수가 아니면, 책 크기가 CSS 픽셀
+    // 기준으로는 딱 맞아떨어져도 실제 모니터의 물리 픽셀 격자에는 어긋나서 화면에
+    // 그릴 때 미세하게 번져 보인다(캔버스 해상도를 아무리 올려도 이 마지막 합성
+    // 단계의 흐림은 못 막는다). 실제 배율(devicePixelRatio)을 기준으로 물리
+    // 픽셀 경계에 딱 맞는 CSS 크기로 반올림해서 이 흐림을 줄인다.
+    var realDpr = window.devicePixelRatio || 1;
+    var width = Math.round(pageW * realDpr) / realDpr;
+    var height = Math.round(pageH * realDpr) / realDpr;
     var isPortrait = stageRect.width < 640;
 
     return {
