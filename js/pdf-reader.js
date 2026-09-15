@@ -11,14 +11,13 @@
 
   // 목차 탭에 표시할 챕터 목록. 다른 자료로 교체할 때는 이 배열도 그 자료의 목차에 맞게 수정하세요.
   // page: 그 챕터가 시작하는 실제 이미지 페이지 번호(1부터 시작). color: 탭 배경(파스텔 톤), textColor: 탭 글자색.
-  // shortTitle: 화면이 좁을 때(모바일) 탭 6개가 잘리지 않고 다 보이도록 쓰는 축약 이름.
   var CHAPTERS = [
-    { title: "'영점소비' 시대", shortTitle: '영점소비', page: 10, color: '#cdd3f7', textColor: '#3d4a9e' },
-    { title: '1. 마이-파이', shortTitle: '마이파이', page: 31, color: '#c9ead9', textColor: '#2f8a5b' },
-    { title: '2. 언클리셰', shortTitle: '언클리셰', page: 45, color: '#cdeaf3', textColor: '#1f7c9c' },
-    { title: '3. BPM', shortTitle: 'BPM', page: 59, color: '#f6d3e2', textColor: '#b1447a' },
-    { title: '4. 스탯 맥싱', shortTitle: '스탯맥싱', page: 71, color: '#ddd6f7', textColor: '#6249c7' },
-    { title: '영점 조준의 시대', shortTitle: '영점조준', page: 79, color: '#cdd3f7', textColor: '#3d4a9e' }
+    { title: "'영점소비' 시대", page: 10, color: '#cdd3f7', textColor: '#3d4a9e' },
+    { title: '1. 마이-파이', page: 31, color: '#c9ead9', textColor: '#2f8a5b' },
+    { title: '2. 언클리셰', page: 45, color: '#cdeaf3', textColor: '#1f7c9c' },
+    { title: '3. BPM', page: 59, color: '#f6d3e2', textColor: '#b1447a' },
+    { title: '4. 스탯 맥싱', page: 71, color: '#ddd6f7', textColor: '#6249c7' },
+    { title: '영점 조준의 시대', page: 79, color: '#cdd3f7', textColor: '#3d4a9e' }
   ];
 
   // 모바일 브라우저(특히 카카오톡 등 인앱 브라우저)는 100dvh를 지원 안 하거나 주소창이
@@ -45,8 +44,9 @@
   var currentEl = document.querySelector('.pr-indicator__current');
   var totalEl = document.querySelector('.pr-indicator__total');
   var indexRail = document.getElementById('pr-index-rail');
-  var indexTabsEl = document.getElementById('pr-index-tabs');
   var bookCropEl = document.getElementById('pr-book-crop');
+  var pageJumpBtn = document.getElementById('pr-page-jump-btn');
+  var pageJumpInput = document.getElementById('pr-page-jump-input');
 
   // 테마 전환 (밝은 모드 / 다크 모드 / 일러스트 배경). 책 페이지 이미지 자체는 그대로 두고
   // 주변 화면 색상만 바뀐다. 선택한 테마는 localStorage에 저장해서 다음 방문에도 유지한다.
@@ -95,11 +95,11 @@
 
   function sizeBookToStage(aspect) {
     var stageRect = stage.getBoundingClientRect();
-    // 목차 탭이 책 위쪽에 한 줄로 붙어 있으므로, 그 실제 높이만큼은 책 높이
-    // 계산에서 빼서 책이 그 아래 남는 공간에 맞춰지게 한다.
-    var indexTopHeight = (indexRail && indexRail.offsetHeight) || 0;
-    var availW = Math.max(200, stageRect.width - 32);
-    var availH = Math.max(200, stageRect.height - 32 - indexTopHeight);
+    // 목차가 책 오른쪽 가장자리에 붙어서 따라다니므로, 책 너비를 계산할 때
+    // 그 폭만큼 미리 비워둬서 화면 밖으로 넘치지 않게 한다.
+    var railWidth = (indexRail && indexRail.offsetWidth) || 0;
+    var availW = Math.max(200, stageRect.width - 32 - railWidth);
+    var availH = Math.max(200, stageRect.height - 32);
 
     // 두 페이지가 나란히 펼쳐지는 스프레드 기준으로 한 페이지 폭을 계산
     var pageW = Math.min(availW / 2, availH * aspect);
@@ -118,6 +118,7 @@
 
     var width = Math.round(pageW);
     var height = Math.round(pageH);
+    var isPortrait = stageRect.width < 640;
 
     return {
       width: width,
@@ -125,10 +126,13 @@
       // stretch 모드가 화면보다 커지지 않도록 상한을 실제 계산값으로 고정.
       // min은 max를 절대 넘으면 안 되므로(가로형처럼 height가 작은 경우 고정 하한을 쓰면
       // min > max가 되어 라이브러리가 박스를 이미지 비율과 다르게 키워 흰 여백이 생긴다)
-      // 비율 기반으로만 계산한다.
-      minWidth: Math.round(width * 0.6),
+      // 비율 기반으로만 계산한다. 한 페이지 모드에서는 min을 max와 같게 둔다 —
+      // 라이브러리가 자체적으로 한 페이지/스프레드 여부를 판단할 때 min에 여유를
+      // 주면(예: 0.6배) 그 여유 폭을 스프레드가 들어갈 공간으로 오판해 세로로 긴
+      // 모바일 화면에서도 두 페이지짜리 스프레드로 렌더링해버리는 경우가 있었다.
+      minWidth: isPortrait ? width : Math.round(width * 0.6),
       maxWidth: width,
-      minHeight: Math.round(height * 0.6),
+      minHeight: isPortrait ? height : Math.round(height * 0.6),
       maxHeight: height
     };
   }
@@ -160,25 +164,12 @@
     ctx.imageSmoothingQuality = 'high';
   }
 
-  // 상단 목차 탭이 책 너비를 넘어가지 않도록, 실제로 보여지는 책의 폭(표지에서는
-  // 크롭된 절반 폭)에 맞춰 목차 바의 최대 너비를 맞춰준다.
-  // widthPx는 미리 계산해둔 숫자를 그대로 받는다 — bookCropEl은 width에 transition이
-  // 걸려 있어서, 값을 바꾼 直후 offsetWidth를 다시 읽으면 트랜지션 시작 전(이전) 값이
-  // 나오는 경우가 있어 새로 측정하지 않고 이미 아는 값을 그대로 쓴다.
-  function syncTopBarWidth(widthPx) {
-    if (!indexRail || !widthPx) return;
-    indexRail.style.maxWidth = Math.round(widthPx) + 'px';
-  }
-
   // 앞표지(0페이지)·뒤표지(마지막 페이지)는 스프레드가 아니라 한 페이지만 있으므로,
   // 책 전체 폭(2페이지 스프레드 기준) 중 그 페이지가 있는 절반만 보이게 잘라내고
   // 나머지 빈 절반은 숨긴다. 책 자체 크기는 그대로 두고 보이는 영역만 좁히는 방식이라
   // 페이지 넘김 애니메이션이나 폭 계산에는 영향을 주지 않는다.
   // 모바일처럼 한 페이지씩만 보이는 portrait 모드에서는 애초에 빈 절반이 없고 페이지
   // 내용이 컨테이너 전체를 채우므로, landscape(2페이지 스프레드) 모드에서만 크롭한다.
-  // 목차 바도 같이 처리한다: 일반 스프레드(2페이지)에서는 오른쪽 페이지 폭에만 맞춰
-  // 그 페이지 위에 붙이고, 표지(1페이지)나 모바일(portrait, 항상 1페이지)에서는
-  // 보이는 페이지 폭 그대로 맞춘다.
   function applyCoverCrop(pageIndex, totalPages) {
     if (!bookCropEl || !bookEl) return;
     var fullWidth = parseFloat(bookEl.style.width) || bookEl.offsetWidth;
@@ -192,17 +183,270 @@
       var half = Math.round(fullWidth / 2);
       bookCropEl.style.width = half + 'px';
       bookEl.style.marginLeft = isFront ? -half + 'px' : '0px';
-      syncTopBarWidth(half);
     } else {
       bookCropEl.style.width = fullWidth + 'px';
       bookEl.style.marginLeft = '0px';
-      syncTopBarWidth(fullWidth);
     }
+    positionIndexRail();
+  }
 
-    if (indexTabsEl) {
-      indexTabsEl.classList.toggle('is-page-right', isLandscape && !isCoverSolo);
+  // 목차 탭을 책의 실제 오른쪽 가장자리에 붙여서 위치시킨다. 화면(stage) 기준
+  // 절대 좌표가 아니라 책(book-crop)의 현재 위치를 매번 다시 측정해서 따라가게
+  // 하므로, 책이 화면 중앙에서 벗어나 있거나 확대/축소·앞뒤 표지 크롭으로 크기가
+  // 바뀌어도 항상 책 옆에 붙어 있다. 여유 공간이 부족해 화면 밖으로 살짝 넘치는
+  // 한이 있더라도(어차피 .pr-stage가 overflow:hidden이라 잘려서 안 보일 뿐),
+  // 책 위에 겹쳐 보이는 것보다는 안전하므로 책 오른쪽 바깥으로만 붙이고 안쪽으로
+  // 당겨서 겹치게 하지 않는다.
+  function positionIndexRail() {
+    if (!indexRail || !bookCropEl || !stage) return;
+    var stageRect = stage.getBoundingClientRect();
+    var cropRect = bookCropEl.getBoundingClientRect();
+    var gap = 4;
+    var left = Math.max(8, cropRect.right - stageRect.left + gap);
+    indexRail.style.left = left + 'px';
+  }
+
+  // book-crop의 width는 CSS transition(0.2s)으로 부드럽게 바뀌는데, applyCoverCrop()
+  // 직후 positionIndexRail()을 부르면 트랜지션이 시작되기 전(바뀌기 전 폭) 기준으로
+  // 위치를 잡아버려서, 책이 새 폭으로 애니메이션되는 동안 탭이 제자리에 멈춰 있다가
+  // 책 내용과 겹쳐 보이는 문제가 있었다. 트랜지션이 끝나는 시점에 한 번 더 다시
+  // 위치를 잡아줘서 최종 폭 기준으로 확실히 맞춘다.
+  if (bookCropEl) {
+    bookCropEl.addEventListener('transitionend', function (event) {
+      if (event.propertyName === 'width') positionIndexRail();
+    });
+  }
+
+  // --- 확대/축소 ---
+  var zoomLevel = 1;
+  var ZOOM_MIN = 1;
+  var ZOOM_MAX = 2;
+  var ZOOM_STEP = 0.25;
+  var zoomInBtn = document.getElementById('pr-zoom-in');
+  var zoomOutBtn = document.getElementById('pr-zoom-out');
+  var zoomLevelEl = document.getElementById('pr-zoom-level');
+
+  function applyZoom() {
+    if (bookCropEl) bookCropEl.style.transform = zoomLevel === 1 ? '' : 'scale(' + zoomLevel + ')';
+    if (zoomLevelEl) zoomLevelEl.textContent = Math.round(zoomLevel * 100) + '%';
+    // 확대되면 책이 화면보다 커질 수 있어서, 그 안에서 스크롤로 나머지를 볼 수 있게 한다.
+    if (stage) stage.classList.toggle('is-zoomed', zoomLevel > 1);
+    positionIndexRail();
+  }
+
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', function () {
+      zoomLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 100) / 100);
+      applyZoom();
+    });
+  }
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', function () {
+      zoomLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 100) / 100);
+      applyZoom();
+    });
+  }
+
+  // --- 책갈피 (책에 직접 꽂힌 리본처럼 표시 + 좌상단 패널에서 목록으로 모아보기) ---
+  var BOOKMARK_KEY = 'pr-bookmarks';
+  var bookmarkBtn = document.getElementById('pr-bookmark-btn');
+  var bookmarkRibbon = document.getElementById('pr-bookmark-ribbon');
+  var bookmarkPanel = document.getElementById('pr-bookmark-panel');
+  var bookmarkToggleBtn = document.getElementById('pr-bookmark-toggle');
+  var bookmarkListEl = document.getElementById('pr-bookmark-list');
+  var bookmarkEmptyEl = document.getElementById('pr-bookmark-empty');
+  var bookmarks = [];
+  try { bookmarks = JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]'); } catch (e) { bookmarks = []; }
+
+  function saveBookmarks() {
+    try { localStorage.setItem(BOOKMARK_KEY, JSON.stringify(bookmarks)); } catch (e) { /* 저장 불가 시 무시 */ }
+  }
+
+  function updateBookmarkUI(pageIndex) {
+    var marked = bookmarks.indexOf(pageIndex) !== -1;
+    if (bookmarkBtn) bookmarkBtn.classList.toggle('is-active', marked);
+    if (bookmarkRibbon) bookmarkRibbon.hidden = !marked;
+    if (bookmarkToggleBtn) {
+      bookmarkToggleBtn.textContent = marked ? '🔖 이 페이지 책갈피 삭제' : '🔖 이 페이지 책갈피 추가';
+      bookmarkToggleBtn.classList.toggle('is-active', marked);
     }
   }
+
+  // 책갈피한 페이지들을 좌상단 책갈피 패널 안에 목록으로 모아 보여준다. 목차 탭
+  // 자리(화면 오른쪽 바깥쪽)에 같이 섞어두면 지저분해 보인다는 피드백이 있어,
+  // 패널을 열었을 때만 따로 보이게 분리했다.
+  function renderBookmarkList() {
+    if (!bookmarkListEl) return;
+    var old = bookmarkListEl.querySelectorAll('.pr-panel-item');
+    for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+
+    var sorted = bookmarks.slice().sort(function (a, b) { return a - b; });
+    if (bookmarkEmptyEl) bookmarkEmptyEl.hidden = sorted.length > 0;
+
+    sorted.forEach(function (pageIndex) {
+      var item = document.createElement('div');
+      item.className = 'pr-panel-item';
+
+      var jumpBtn = document.createElement('button');
+      jumpBtn.type = 'button';
+      jumpBtn.className = 'pr-panel-item__jump';
+      jumpBtn.innerHTML = '<span class="pr-panel-item__page">' + (pageIndex + 1) + '쪽</span>';
+      jumpBtn.setAttribute('aria-label', (pageIndex + 1) + '쪽 책갈피로 이동');
+      jumpBtn.addEventListener('click', function () {
+        if (pageFlip) pageFlip.turnToPage(pageIndex);
+        hideHintOnce();
+        closeBookmarkPanel();
+      });
+
+      var deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'pr-panel-item__delete';
+      deleteBtn.textContent = '✕';
+      deleteBtn.setAttribute('aria-label', (pageIndex + 1) + '쪽 책갈피 삭제');
+      deleteBtn.addEventListener('click', function () {
+        var pos = bookmarks.indexOf(pageIndex);
+        if (pos !== -1) bookmarks.splice(pos, 1);
+        saveBookmarks();
+        if (pageFlip && pageFlip.getCurrentPageIndex() === pageIndex) updateBookmarkUI(pageIndex);
+        renderBookmarkList();
+      });
+
+      item.appendChild(jumpBtn);
+      item.appendChild(deleteBtn);
+      bookmarkListEl.appendChild(item);
+    });
+  }
+
+  function openBookmarkPanel() {
+    if (!bookmarkPanel) return;
+    if (memoPanel && !memoPanel.hidden) closeMemoPanel();
+    renderBookmarkList();
+    bookmarkPanel.hidden = false;
+  }
+
+  function closeBookmarkPanel() {
+    if (bookmarkPanel) bookmarkPanel.hidden = true;
+  }
+
+  function toggleBookmarkPanel() {
+    if (!bookmarkPanel) return;
+    if (bookmarkPanel.hidden) openBookmarkPanel(); else closeBookmarkPanel();
+  }
+
+  if (bookmarkBtn) bookmarkBtn.addEventListener('click', toggleBookmarkPanel);
+
+  if (bookmarkToggleBtn) {
+    bookmarkToggleBtn.addEventListener('click', function () {
+      if (!pageFlip) return;
+      var pageIndex = pageFlip.getCurrentPageIndex();
+      var pos = bookmarks.indexOf(pageIndex);
+      if (pos === -1) bookmarks.push(pageIndex); else bookmarks.splice(pos, 1);
+      saveBookmarks();
+      updateBookmarkUI(pageIndex);
+      renderBookmarkList();
+    });
+  }
+
+  // --- 메모 (좌상단 패널에서 현재 페이지 작성 + 전체 목록 모아보기) ---
+  var MEMO_KEY = 'pr-memos';
+  var memoBtn = document.getElementById('pr-memo-btn');
+  var memoPanel = document.getElementById('pr-memo-panel');
+  var memoTextarea = document.getElementById('pr-memo-textarea');
+  var memoCloseBtn = document.getElementById('pr-memo-close');
+  var memoListHeadEl = document.getElementById('pr-memo-listhead');
+  var memoListEl = document.getElementById('pr-memo-list');
+  var memoEmptyEl = document.getElementById('pr-memo-empty');
+  var memoOpenPageIndex = null;
+  var memos = {};
+  try { memos = JSON.parse(localStorage.getItem(MEMO_KEY) || '{}'); } catch (e) { memos = {}; }
+
+  function saveMemos() {
+    try { localStorage.setItem(MEMO_KEY, JSON.stringify(memos)); } catch (e) { /* 저장 불가 시 무시 */ }
+  }
+
+  function updateMemoUI(pageIndex) {
+    var hasMemo = !!(memos[pageIndex] && String(memos[pageIndex]).trim());
+    if (memoBtn) memoBtn.classList.toggle('is-active', hasMemo);
+  }
+
+  // 메모 남긴 페이지들을 페이지 번호 순으로 목록화해서, 클릭하면 그 페이지로
+  // 이동하면서 바로 그 메모를 불러와 이어서 편집할 수 있게 한다.
+  function renderMemoList() {
+    if (!memoListEl) return;
+    var old = memoListEl.querySelectorAll('.pr-panel-item');
+    for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+
+    var pageIndexes = Object.keys(memos)
+      .filter(function (key) { return memos[key] && String(memos[key]).trim(); })
+      .map(Number)
+      .sort(function (a, b) { return a - b; });
+
+    if (memoEmptyEl) memoEmptyEl.hidden = pageIndexes.length > 0;
+    if (memoListHeadEl) memoListHeadEl.hidden = pageIndexes.length === 0;
+
+    pageIndexes.forEach(function (pageIndex) {
+      var item = document.createElement('div');
+      item.className = 'pr-panel-item';
+
+      var jumpBtn = document.createElement('button');
+      jumpBtn.type = 'button';
+      jumpBtn.className = 'pr-panel-item__jump';
+      jumpBtn.innerHTML = '<span class="pr-panel-item__page">' + (pageIndex + 1) + '쪽</span>' +
+        '<span class="pr-panel-item__snippet"></span>';
+      jumpBtn.querySelector('.pr-panel-item__snippet').textContent = memos[pageIndex];
+      jumpBtn.setAttribute('aria-label', (pageIndex + 1) + '쪽 메모로 이동');
+      jumpBtn.addEventListener('click', function () {
+        if (pageFlip) pageFlip.turnToPage(pageIndex);
+        hideHintOnce();
+        openMemoPanel();
+      });
+
+      var deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'pr-panel-item__delete';
+      deleteBtn.textContent = '✕';
+      deleteBtn.setAttribute('aria-label', (pageIndex + 1) + '쪽 메모 삭제');
+      deleteBtn.addEventListener('click', function () {
+        delete memos[pageIndex];
+        saveMemos();
+        if (pageFlip && pageFlip.getCurrentPageIndex() === pageIndex) {
+          updateMemoUI(pageIndex);
+          if (memoOpenPageIndex === pageIndex && memoTextarea) memoTextarea.value = '';
+        }
+        renderMemoList();
+      });
+
+      item.appendChild(jumpBtn);
+      item.appendChild(deleteBtn);
+      memoListEl.appendChild(item);
+    });
+  }
+
+  function openMemoPanel() {
+    if (!pageFlip || !memoPanel || !memoTextarea) return;
+    closeBookmarkPanel();
+    memoOpenPageIndex = pageFlip.getCurrentPageIndex();
+    memoTextarea.value = memos[memoOpenPageIndex] || '';
+    renderMemoList();
+    memoPanel.hidden = false;
+    memoTextarea.focus();
+  }
+
+  // 메모 창을 닫을 때, 열려 있던 그 페이지 번호(memoOpenPageIndex) 기준으로 저장해야 한다.
+  // 페이지를 넘긴 뒤에 닫히는 경우 pageFlip.getCurrentPageIndex()는 이미 다음 페이지를
+  // 가리키고 있어서, 새로 조회하면 엉뚱한 페이지에 메모가 저장되는 문제가 있다.
+  function closeMemoPanel() {
+    if (memoPanel) memoPanel.hidden = true;
+    if (memoOpenPageIndex === null || !memoTextarea) return;
+    var value = memoTextarea.value;
+    if (value && value.trim()) memos[memoOpenPageIndex] = value; else delete memos[memoOpenPageIndex];
+    saveMemos();
+    updateMemoUI(memoOpenPageIndex);
+    memoOpenPageIndex = null;
+  }
+
+  if (memoBtn) memoBtn.addEventListener('click', openMemoPanel);
+  if (memoCloseBtn) memoCloseBtn.addEventListener('click', closeMemoPanel);
 
   function updateIndicator(pageIndex, totalPages) {
     if (currentEl) currentEl.textContent = String(pageIndex + 1);
@@ -210,6 +454,8 @@
     if (prevBtn) prevBtn.disabled = pageIndex <= 0;
     if (nextBtn) nextBtn.disabled = pageIndex >= totalPages - 1;
     setActiveIndexTab(pageIndex);
+    updateBookmarkUI(pageIndex);
+    updateMemoUI(pageIndex);
   }
 
   function hideHintOnce() {
@@ -221,8 +467,8 @@
   var indexTabs = [];
 
   function buildIndexRail(numPages) {
-    if (!indexTabsEl) return;
-    indexTabsEl.innerHTML = '';
+    if (!indexRail) return;
+    indexRail.innerHTML = '';
     indexTabs = [];
 
     CHAPTERS.forEach(function (chapter) {
@@ -231,9 +477,7 @@
       var tab = document.createElement('button');
       tab.type = 'button';
       tab.className = 'pr-index-tab';
-      tab.innerHTML =
-        '<span class="pr-index-tab__full">' + chapter.title + '</span>' +
-        '<span class="pr-index-tab__short">' + chapter.shortTitle + '</span>';
+      tab.textContent = chapter.title;
       tab.setAttribute('aria-label', chapter.title + ' 부분으로 이동');
       tab.style.setProperty('--tab-color', chapter.color);
       tab.style.setProperty('--tab-text', chapter.textColor);
@@ -246,7 +490,7 @@
         hideHintOnce();
       });
 
-      indexTabsEl.appendChild(tab);
+      indexRail.appendChild(tab);
       indexTabs.push(tab);
     });
   }
@@ -358,6 +602,9 @@
     });
 
     thisPageFlip.on('flip', function (e) {
+      // 메모 창을 열어둔 채로 페이지를 넘기면 이전 페이지 메모가 저장 안 되고
+      // 날아갈 수 있어서, 페이지가 바뀌기 전에 먼저 저장하고 닫는다.
+      if (memoPanel && !memoPanel.hidden) closeMemoPanel();
       applyCoverCrop(e.data, pageCount);
       updateIndicator(e.data, pageCount);
       hideHintOnce();
@@ -377,6 +624,7 @@
       pageAspect = probe.naturalWidth / probe.naturalHeight;
     }
     buildIndexRail(pageCount);
+    renderBookmarkList();
     buildBook();
   };
   probe.onerror = function () {
@@ -402,8 +650,50 @@
     });
   }
 
+  // 하단 페이지 숫자를 눌러서 원하는 페이지로 바로 이동. 숫자 자리를 입력창으로
+  // 바꿔치기해서 그 자리에서 바로 타이핑하고 엔터로 이동할 수 있게 한다.
+  var indicatorEl = document.getElementById('pr-indicator');
+
+  function enterPageJumpMode() {
+    if (!pageJumpInput || !indicatorEl || !currentEl) return;
+    pageJumpInput.value = currentEl.textContent;
+    indicatorEl.classList.add('is-editing');
+    pageJumpInput.focus();
+    pageJumpInput.select();
+  }
+
+  function exitPageJumpMode() {
+    if (indicatorEl) indicatorEl.classList.remove('is-editing');
+  }
+
+  function commitPageJump() {
+    if (!pageJumpInput) return;
+    var target = parseInt(pageJumpInput.value, 10);
+    if (pageFlip && target >= 1 && target <= pageCount) {
+      pageFlip.turnToPage(target - 1);
+      hideHintOnce();
+    }
+    exitPageJumpMode();
+  }
+
+  if (pageJumpBtn) {
+    pageJumpBtn.addEventListener('click', enterPageJumpMode);
+  }
+
+  if (pageJumpInput) {
+    pageJumpInput.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') commitPageJump();
+      if (event.key === 'Escape') exitPageJumpMode();
+    });
+    pageJumpInput.addEventListener('blur', exitPageJumpMode);
+  }
+
   document.addEventListener('keydown', function (event) {
     if (!pageFlip) return;
+    // 페이지 이동 입력창에 포커스가 있을 때는 방향키가 숫자 값을 바꾸거나 커서를
+    // 옮기는 용도로 쓰여야 하므로, 여기서 책장을 넘겨버리면 안 된다.
+    var tag = event.target && event.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') pageFlip.turnToNextPage();
     if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') pageFlip.turnToPrevPage();
   });
