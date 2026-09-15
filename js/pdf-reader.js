@@ -98,6 +98,15 @@
     // 목차가 책 오른쪽 가장자리에 붙어서 따라다니므로, 책 너비를 계산할 때
     // 그 폭만큼 미리 비워둬서 화면 밖으로 넘치지 않게 한다.
     var railWidth = (indexRail && indexRail.offsetWidth) || 0;
+    // .pr-stage는 flex로 책을 "화면 전체 폭" 기준 가운데 정렬하는데, 그 상태에서 책 폭만
+    // railWidth만큼 줄이면 줄어든 만큼이 좌우로 반씩(가운데 정렬이니) 나뉘어 여백이 되고,
+    // 정작 목차가 필요한 오른쪽에는 그 절반만 남아 목차가 화면 밖으로 잘려나간다.
+    // 오른쪽 padding을 그만큼 미리 늘려서, 책이 그 줄어든 영역 안에서 가운데 정렬되게
+    // 하면 오른쪽에 목차가 들어갈 공간이 통째로 남는다.
+    // +6은 탭에 마우스를 올리거나 활성 탭일 때 오른쪽으로 살짝 튀어나오는
+    // translateX(hover 4px/active 6px) 애니메이션 여유분 — 이 여유가 없으면
+    // 마우스를 올렸을 때 튀어나온 부분이 화면 밖으로 잘려 보인다.
+    stage.style.paddingRight = (16 + railWidth + 6) + 'px';
     var availW = Math.max(200, stageRect.width - 32 - railWidth);
     var availH = Math.max(200, stageRect.height - 32);
 
@@ -201,7 +210,7 @@
     if (!indexRail || !bookCropEl || !stage) return;
     var stageRect = stage.getBoundingClientRect();
     var cropRect = bookCropEl.getBoundingClientRect();
-    var gap = 4;
+    var gap = 0;
     var left = Math.max(8, cropRect.right - stageRect.left + gap);
     indexRail.style.left = left + 'px';
   }
@@ -554,6 +563,13 @@
     freshBookEl.className = 'pr-book';
     bookCropEl.appendChild(freshBookEl);
     bookEl = freshBookEl;
+
+    // book-crop은 CSS로 width:100%라서, 라이브러리가 실제 렌더링 폭을 잴 때 그 100%
+    // (=화면 전체 폭)를 그대로 집어가 버려서 minWidth/maxWidth로 반영한 목차 자리
+    // 예약이 무시되는 문제가 있었다. max-width로 상한을 못박아서, width:100%가
+    // 이 상한을 절대 넘지 못하게 한다(width와 달리 max-width는 항상 우선 적용된다).
+    var isPortraitMode = stage.getBoundingClientRect().width < 640;
+    bookCropEl.style.maxWidth = (isPortraitMode ? dims.width : dims.width * 2) + 'px';
 
     pageFlip = new St.PageFlip(bookEl, {
       width: dims.width,
