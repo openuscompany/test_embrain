@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>2027 트렌드모니터 (이북)</title>
   <link rel="stylesheet" href="css/reset.css">
-  <link rel="stylesheet" href="css/pdf-reader.css?v=83">
+  <link rel="stylesheet" href="css/pdf-reader.css?v=88">
 </head>
 
 <body class="pdf-reader" data-theme="light">
@@ -54,6 +54,13 @@
 
     <div class="pr-controls">
       <div class="pr-controls__nav">
+        <button type="button" class="pr-btn pr-btn--sm pr-btn--first" id="pr-first" aria-label="첫 페이지로 이동">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M11 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
         <button type="button" class="pr-btn pr-btn--prev" id="pr-prev" aria-label="이전 페이지">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -67,6 +74,13 @@
 
         <button type="button" class="pr-btn pr-btn--next" id="pr-next" aria-label="다음 페이지">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+        <button type="button" class="pr-btn pr-btn--sm pr-btn--last" id="pr-last" aria-label="마지막 페이지로 이동">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </button>
       </div>
 
@@ -85,7 +99,7 @@
   </div>
 
   <script src="js/vendor/page-flip.browser.js"></script>
-  <script src="js/pdf-reader.js?v=102"></script>
+  <script src="js/pdf-reader.js?v=105"></script>
 </body>
 
 </html>
