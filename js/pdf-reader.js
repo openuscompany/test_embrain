@@ -166,7 +166,12 @@
     // 없애는데, 그 축소 단계에서 오히려 뭉개져 보이는 역효과가 있었다. 원본
     // 이미지가 이미 고해상도(3000px대)라서, dpr을 부풀리지 않고 실제 화면
     // 배율 그대로 맞춰야 브라우저가 다시 축소할 필요 없이 딱 맞게 그려진다.
-    var dpr = Math.max(1, window.devicePixelRatio || 1);
+    // 다만 canvas.clientWidth는 확대 버튼(transform: scale)을 적용해도 안 바뀐다
+    // (transform은 레이아웃 크기에 영향을 안 준다) — 그래서 딱 100% 기준으로만
+    // 여유 없이 그려두면, 확대했을 때는 그 그대로의 캔버스를 CSS로 늘려 보여주는
+    // 셈이 되어 오히려 화질이 떨어진다. 현재 확대 배율(zoomLevel)만큼 추가로
+    // 곱해서, 확대된 화면 크기에 맞는 해상도로 다시 그리게 한다.
+    var dpr = Math.max(1, window.devicePixelRatio || 1) * zoomLevel;
     var cssWidth = canvas.clientWidth;
     var cssHeight = canvas.clientHeight;
     if (!cssWidth || !cssHeight) return;
@@ -261,6 +266,10 @@
     // 상관없이 항상 같은(레이어 분리된) 경로로 그려지게 한다.
     if (bookCropEl) bookCropEl.style.transform = 'scale(' + zoomLevel + ')';
     if (zoomLevelEl) zoomLevelEl.textContent = Math.round(zoomLevel * 100) + '%';
+    // 캔버스 해상도가 devicePixelRatio만 반영하고 확대 배율은 반영 못 하고 있었어서
+    // (transform은 레이아웃 크기를 안 바꾸니 clientWidth가 그대로라), 확대할 때마다
+    // 지금 배율에 맞는 해상도로 캔버스를 다시 그린다.
+    applyRetinaCanvas(bookEl);
     // 확대되면 책이 화면보다 커질 수 있어서, 그 안에서 스크롤로 나머지를 볼 수 있게 한다.
     if (stage) stage.classList.toggle('is-zoomed', zoomLevel > 1);
     positionIndexRail();
