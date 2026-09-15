@@ -133,9 +133,15 @@ body {
    보여줄 절반만 남기고 나머지는 잘라낸다. 실제 책 크기 자체는 그대로 두고
    보이는 영역만 좁히는 방식이라 폭 계산이 꼬이지 않는다. */
 .pr-book-crop {
+  position: relative;
   width: 100%;
   overflow: hidden;
-  transition: width 0.2s ease;
+  transition: width 0.2s ease, transform 0.2s ease;
+}
+
+/* 확대 상태에서는 책이 화면보다 커질 수 있어서, 스크롤로 나머지 부분을 볼 수 있게 한다 */
+.pr-stage.is-zoomed {
+  overflow: auto;
 }
 
 .pr-book {
@@ -299,6 +305,52 @@ body {
 
 .pr-indicator__current {
   color: var(--color-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  background: none;
+  border: none;
+  cursor: pointer;
+  /* 숫자 하나만 딱 감싸면 클릭 영역이 너무 좁아서 손으로 누르기 어렵다.
+     여백을 넉넉히 줘서 실제로 누르기 쉬운 크기로 만든다. */
+  min-width: 1.6em;
+  padding: 6px 8px;
+  margin: -6px -8px;
+  border-radius: 8px;
+  border-bottom: 1px dashed transparent;
+}
+
+.pr-indicator__current:hover {
+  background: rgba(0, 102, 179, 0.1);
+  border-bottom-color: var(--color-text-muted);
+}
+
+/* 클릭하면 숫자 대신 입력창이 나타나 원하는 페이지로 바로 이동할 수 있다 */
+.pr-indicator__input {
+  display: none;
+  width: 2.4em;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 1px 4px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.pr-indicator__input::-webkit-outer-spin-button,
+.pr-indicator__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pr-indicator.is-editing .pr-indicator__current {
+  display: none;
+}
+
+.pr-indicator.is-editing .pr-indicator__input {
+  display: inline-block;
 }
 
 /* Hint */
@@ -329,86 +381,311 @@ body {
   }
 }
 
-/* 목차 (책 위에 꽂힌 색인 탭처럼, 책 상단에 붙여서 표시. 탭 6개가 항상 책 너비
-   안에서 균등하게 나뉘어 스크롤 없이 한 번에 다 보이게 한다) */
+/* 목차 (책 오른쪽 가장자리에 바로 붙여서 표시. 화면 가장자리가 아니라 책 자체를
+   기준으로 위치를 잡기 때문에(JS의 positionIndexRail), 책이 작아지거나 가운데에서
+   벗어나 있어도 항상 책에 붙어 따라다닌다. left는 JS가 매번 계산해서 넣어준다.) */
 
-/* 바깥 nav: 항상 현재 보여지는 책 폭(스프레드 전체 또는 표지 크롭 폭)과 같은
-   크기로 JS가 맞춰준다. 실제 탭 정렬은 안쪽 .pr-index-top이 담당한다. */
 .pr-index-rail {
-  width: 100%;
-}
-
-.pr-index-top {
-  width: 100%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;
   display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  padding: 0 4px;
-  margin-bottom: -1px;
-  transition: width 0.2s ease;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100% - 24px);
+  padding: 4px 0;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
-/* PC에서 2페이지가 나란히 펼쳐질 때는, 목차를 스프레드 전체가 아니라 오른쪽
-   페이지 폭에만 맞춰 그 페이지 바로 위에 붙인다(왼쪽 페이지 위는 비워둠). */
-.pr-index-top.is-page-right {
-  width: 50%;
-  margin-left: auto;
+.pr-index-rail::-webkit-scrollbar {
+  display: none;
 }
 
 .pr-index-tab {
   position: relative;
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 8px 6px 7px;
-  border-radius: 8px 8px 0 0;
+  flex: 0 0 auto;
+  width: 148px;
+  padding: 12px 14px;
+  border-radius: 0 12px 12px 0;
   background: var(--tab-color, var(--color-accent));
   color: var(--tab-text, #ffffff);
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
+  line-height: 1.35;
   letter-spacing: -0.01em;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0.65;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
-  transform: translateY(7px);
+  text-align: left;
+  white-space: normal;
+  box-shadow: 3px 2px 10px rgba(17, 24, 39, 0.15);
+  opacity: 0.88;
   transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
-}
-
-.pr-index-tab__short {
-  display: none;
 }
 
 .pr-index-tab:hover,
 .pr-index-tab:focus-visible {
-  opacity: 0.85;
-  transform: translateY(3px);
+  opacity: 1;
+  transform: translateX(4px);
 }
 
 .pr-index-tab.is-active {
   opacity: 1;
-  transform: translateY(0);
-  box-shadow: 0 4px 10px -4px rgba(17, 24, 39, 0.28), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  transform: translateX(6px);
+  box-shadow: 4px 3px 16px rgba(17, 24, 39, 0.3);
 }
 
 @media (max-width: 640px) {
-  .pr-index-top {
-    gap: 3px;
+  .pr-index-rail {
+    gap: 6px;
   }
 
   .pr-index-tab {
-    padding: 6px 3px 6px;
-    font-size: 0.625rem;
+    width: 104px;
+    padding: 9px 10px;
+    font-size: 0.6875rem;
+    border-radius: 0 10px 10px 0;
   }
+}
 
-  /* 좁은 화면에서는 원래 제목 대신 짧은 이름으로 바꿔서 잘리지 않고 다 보이게 한다 */
-  .pr-index-tab__full {
-    display: none;
-  }
+/* 도구 모음 (좌상단 플로팅) — 확대/축소, 책갈피, 메모 */
 
-  .pr-index-tab__short {
-    display: inline;
+.pr-toolbar {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.pr-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: background-color 0.15s ease;
+}
+
+.pr-toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.pr-toolbar-btn.is-active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.pr-toolbar-zoom-level {
+  min-width: 38px;
+  text-align: center;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-toolbar-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 0 2px;
+}
+
+/* 책갈피 패널 / 메모 패널 — 둘 다 좌상단 도구 모음 바로 아래 뜨는 작은 팝업 */
+
+.pr-bookmark-panel,
+.pr-memo-panel {
+  position: fixed;
+  top: 60px;
+  left: 16px;
+  z-index: 20;
+  width: 240px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(17, 24, 39, 0.22);
+  padding: 10px;
+}
+
+.pr-bookmark-panel[hidden],
+.pr-memo-panel[hidden] {
+  display: none;
+}
+
+/* 책갈피 추가/삭제 버튼 · 메모 목록 소제목 — 두 패널에서 공통으로 쓰는 스타일 */
+.pr-panel-toggle {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.pr-panel-toggle:hover {
+  background: rgba(0, 102, 179, 0.1);
+}
+
+.pr-panel-toggle.is-active {
+  color: #e0568f;
+  border-color: #e0568f;
+}
+
+.pr-panel-subhead {
+  margin: 10px 0 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.pr-panel-subhead[hidden] {
+  display: none;
+}
+
+.pr-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pr-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  border-radius: 8px;
+  background: var(--color-bg);
+  transition: background-color 0.15s ease;
+}
+
+.pr-panel-item:hover {
+  background: rgba(0, 102, 179, 0.1);
+}
+
+.pr-panel-item__jump {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  padding: 8px 10px;
+}
+
+.pr-panel-item__page {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #e0568f;
+}
+
+.pr-panel-item__snippet {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr-panel-item__delete {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin-right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pr-panel-item__delete:hover {
+  background: rgba(224, 86, 143, 0.15);
+  color: #e0568f;
+}
+
+.pr-panel-empty {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.pr-memo-textarea {
+  display: block;
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.pr-memo-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.pr-memo-close {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  padding: 4px 8px;
+}
+
+.pr-memo-close:hover {
+  color: var(--color-accent-hover);
+}
+
+/* 책갈피 리본 — 실제로 페이지 사이에 꽂아둔 것처럼, 책갈피한 페이지에서만 보인다 */
+
+.pr-bookmark-ribbon {
+  position: absolute;
+  top: 0;
+  right: 22px;
+  width: 24px;
+  height: 56px;
+  background: #e0568f;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  z-index: 12;
+  pointer-events: none;
+}
+
+.pr-bookmark-ribbon[hidden] {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .pr-bookmark-ribbon {
+    width: 18px;
+    height: 42px;
+    right: 12px;
   }
 }
 
