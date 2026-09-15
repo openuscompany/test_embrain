@@ -15,7 +15,7 @@
     { title: "'영점소비' 시대", page: 10, color: '#cdd3f7', textColor: '#3d4a9e' },
     { title: '1. 마이-파이', page: 31, color: '#c9ead9', textColor: '#2f8a5b' },
     { title: '2. 언클리셰', page: 45, color: '#cdeaf3', textColor: '#1f7c9c' },
-    { title: '3. BPM', page: 59, color: '#f6d3e2', textColor: '#b1447a' },
+    { title: '3. BPM 이코노미', page: 59, color: '#f6d3e2', textColor: '#b1447a' },
     { title: '4. 스탯 맥싱', page: 71, color: '#ddd6f7', textColor: '#6249c7' },
     { title: '영점 조준의 시대', page: 79, color: '#cdd3f7', textColor: '#3d4a9e' }
   ];
@@ -160,11 +160,13 @@
     if (!containerEl) return;
     var canvas = containerEl.querySelector('canvas.stf__canvas');
     if (!canvas) return;
-    // PC의 OS 디스플레이 배율이 125%/150% 같은 정수가 아닌 값이면 devicePixelRatio도
-    // 소수(예: 1.25)가 되는데, 그 값 그대로만 맞추면 배율 자체가 낮아서 약간 뭉개져
-    // 보인다. 원본 페이지 이미지가 1725px로 충분히 고해상도라서, dpr이 낮거나 1이어도
-    // 최소 3배로 그려 원본 해상도에 최대한 가깝게 만든다(핀치 줌 여유도 더 생긴다).
-    var dpr = Math.max(3, window.devicePixelRatio || 1);
+    // 예전엔 dpr이 낮아도 무조건 최소 3배로 캔버스를 그렸는데, 그러면 일반
+    // 모니터(dpr=1)에서는 화면에 필요한 것보다 훨씬 큰 캔버스가 만들어진다.
+    // 그 초과분은 우리가 아니라 "브라우저가 화면 크기로 다시 축소"하면서
+    // 없애는데, 그 축소 단계에서 오히려 뭉개져 보이는 역효과가 있었다. 원본
+    // 이미지가 이미 고해상도(3000px대)라서, dpr을 부풀리지 않고 실제 화면
+    // 배율 그대로 맞춰야 브라우저가 다시 축소할 필요 없이 딱 맞게 그려진다.
+    var dpr = Math.max(1, window.devicePixelRatio || 1);
     var cssWidth = canvas.clientWidth;
     var cssHeight = canvas.clientHeight;
     if (!cssWidth || !cssHeight) return;
