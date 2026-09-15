@@ -271,7 +271,17 @@ body {
   }
 
   .pr-controls__nav {
-    gap: 14px;
+    gap: 8px;
+  }
+
+  .pr-btn--sm {
+    width: 28px;
+    height: 28px;
+  }
+
+  .pr-btn--sm svg {
+    width: 14px;
+    height: 14px;
   }
 
   .pr-theme-switcher {
@@ -305,6 +315,18 @@ body {
 .pr-btn:hover:not(:disabled) {
   background: rgba(0, 102, 179, 0.1);
   color: var(--color-accent);
+}
+
+/* 처음/끝으로 이동하는 버튼은 이전/다음 버튼보다 덜 자주 쓰여서, 크기를 조금
+   줄여 가운데 페이지 넘김 버튼들이 시각적으로 더 눈에 띄게 한다. */
+.pr-btn--sm {
+  width: 32px;
+  height: 32px;
+}
+
+.pr-btn--sm svg {
+  width: 16px;
+  height: 16px;
 }
 
 .pr-btn:disabled {
@@ -487,7 +509,11 @@ body {
    일부러 더 구체적인 선택자(.pr-index-rail--top .pr-index-tab)를 쓴다. */
 .pr-index-rail--top {
   flex-direction: row;
-  align-items: flex-end;
+  /* flex-end로 각 탭을 자기 텍스트 줄 수만큼의 높이로 두면, 한 줄짜리 탭과
+     두 줄짜리 탭("'영점소비' 시대"처럼 줄바꿈되는 제목)의 높이가 달라 아래쪽
+     끝이 들쭉날쭉해 보인다. stretch로 바꾸면 다들 가장 큰(두 줄) 탭 높이에
+     맞춰 늘어나고, 아래 .pr-index-tab에서 내용은 세로 가운데로 정렬한다. */
+  align-items: stretch;
   gap: 3px;
   max-height: none;
   overflow: visible;
@@ -495,6 +521,9 @@ body {
 }
 
 .pr-index-rail--top .pr-index-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: auto;
   flex: 1 1 0;
   min-width: 0;
@@ -503,21 +532,24 @@ body {
   font-size: 0.5625rem;
   line-height: 1.2;
   text-align: center;
-  box-shadow: 0 -2px 6px rgba(17, 24, 39, 0.12);
-  opacity: 0.75;
-  transform: translateY(4px);
+  /* 그림자(box-shadow)는 blur가 아무리 작아도 옆으로 번지는 범위가 있어서,
+     탭 사이 간격(3px)이 좁은 이 레이아웃에서는 항상 옆 탭 위로 살짝 겹쳐
+     보였다. 아예 그림자를 빼고 opacity/translateY 차이만으로 기본 탭과
+     선택된 탭을 구분해서, 어떤 경우에도 옆 탭을 침범하지 않는다.
+     기본 상태는 위로 떠 있고, 선택하면 책 쪽으로 눌려 붙는 모양이다. */
+  opacity: 0.7;
+  transform: translateY(0);
 }
 
 .pr-index-rail--top .pr-index-tab:hover,
 .pr-index-rail--top .pr-index-tab:focus-visible {
-  opacity: 0.9;
+  opacity: 0.88;
   transform: translateY(2px);
 }
 
 .pr-index-rail--top .pr-index-tab.is-active {
   opacity: 1;
-  transform: translateY(0);
-  box-shadow: 0 -4px 10px rgba(17, 24, 39, 0.22);
+  transform: translateY(4px);
 }
 
 /* 도구 모음 (좌상단 플로팅) — 확대/축소, 책갈피, 메모 */
