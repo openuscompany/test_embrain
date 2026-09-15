@@ -15,7 +15,7 @@
     { title: "'영점소비' 시대", page: 10, color: '#cdd3f7', textColor: '#3d4a9e' },
     { title: '1. 마이-파이', page: 31, color: '#c9ead9', textColor: '#2f8a5b' },
     { title: '2. 언클리셰', page: 45, color: '#cdeaf3', textColor: '#1f7c9c' },
-    { title: '3. BPM 이코노미', page: 59, color: '#f6d3e2', textColor: '#b1447a' },
+    { title: '3. BPM\n이코노미', page: 59, color: '#f6d3e2', textColor: '#b1447a' },
     { title: '4. 스탯 맥싱', page: 71, color: '#ddd6f7', textColor: '#6249c7' },
     { title: '영점 조준의 시대', page: 79, color: '#cdd3f7', textColor: '#3d4a9e' }
   ];
@@ -246,6 +246,7 @@
     bookCropEl.addEventListener('transitionend', function (event) {
       // width는 앞뒤 표지 크롭 때, transform은 확대/축소(scale) 때 각각 애니메이션되는데,
       // 둘 다 끝난 뒤의 "최종" 크기를 기준으로 다시 붙여야 한다.
+      if (event.propertyName === 'transform') applyZoomAnchor();
       if (event.propertyName === 'width' || event.propertyName === 'transform') positionIndexRail();
     });
   }
@@ -258,6 +259,42 @@
   var zoomInBtn = document.getElementById('pr-zoom-in');
   var zoomOutBtn = document.getElementById('pr-zoom-out');
   var zoomLevelEl = document.getElementById('pr-zoom-level');
+
+  // 지도 확대 UI처럼, 배율을 바꾸기 직전에 "지금 화면 정중앙이 책의 어느 지점을
+  // 보고 있는지"를 책 자체의 좌표(배율 영향 없는 순수 좌표)로 기억해뒀다가,
+  // 배율이 바뀐 뒤 그 지점이 다시 화면 정중앙에 오도록 스크롤을 맞춘다.
+  // 이게 없으면 확대 상태에서 스크롤이 되게 하려고 정렬 방식을 가운데→왼쪽위로
+  // 바꾼 여파로, 버튼을 누를 때마다 보던 위치가 왼쪽 위로 튀어 보인다.
+  var zoomAnchor = null;
+
+  function captureZoomAnchor() {
+    if (!stage || !bookCropEl) { zoomAnchor = null; return; }
+    var stageRect = stage.getBoundingClientRect();
+    var cropRect = bookCropEl.getBoundingClientRect();
+    var viewportCenterX = stageRect.left + stageRect.width / 2;
+    var viewportCenterY = stageRect.top + stageRect.height / 2;
+    zoomAnchor = {
+      x: (viewportCenterX - cropRect.left) / zoomLevel,
+      y: (viewportCenterY - cropRect.top) / zoomLevel
+    };
+  }
+
+  function applyZoomAnchor() {
+    if (!zoomAnchor || !stage || !bookCropEl) { zoomAnchor = null; return; }
+    // 100%로 돌아온 경우는 다시 가운데 정렬로 자연스럽게 맞춰지므로 스크롤을
+    // 따로 보정할 필요가 없다(애초에 스크롤 자체가 없는 상태다).
+    if (zoomLevel > 1) {
+      var stageRect = stage.getBoundingClientRect();
+      var cropRect = bookCropEl.getBoundingClientRect();
+      var viewportCenterX = stageRect.left + stageRect.width / 2;
+      var viewportCenterY = stageRect.top + stageRect.height / 2;
+      var currentAnchorX = cropRect.left + zoomAnchor.x * zoomLevel;
+      var currentAnchorY = cropRect.top + zoomAnchor.y * zoomLevel;
+      stage.scrollLeft += currentAnchorX - viewportCenterX;
+      stage.scrollTop += currentAnchorY - viewportCenterY;
+    }
+    zoomAnchor = null;
+  }
 
   function applyZoom() {
     // 100%(scale(1))일 때 transform을 아예 빼버리면(빈 문자열) 그 요소가 별도
@@ -277,13 +314,19 @@
 
   if (zoomInBtn) {
     zoomInBtn.addEventListener('click', function () {
-      zoomLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 100) / 100);
+      var nextLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 100) / 100);
+      if (nextLevel === zoomLevel) return;
+      captureZoomAnchor();
+      zoomLevel = nextLevel;
       applyZoom();
     });
   }
   if (zoomOutBtn) {
     zoomOutBtn.addEventListener('click', function () {
-      zoomLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 100) / 100);
+      var nextLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 100) / 100);
+      if (nextLevel === zoomLevel) return;
+      captureZoomAnchor();
+      zoomLevel = nextLevel;
       applyZoom();
     });
   }
@@ -522,8 +565,14 @@
       var tab = document.createElement('button');
       tab.type = 'button';
       tab.className = 'pr-index-tab';
-      tab.textContent = chapter.title;
-      tab.setAttribute('aria-label', chapter.title + ' 부분으로 이동');
+      // 제목에 \n이 있으면 그 자리에서 강제로 줄바꿈한다(자동 줄바꿈에 맡기면
+      // 단어 중간이 잘려서 "이코노미"가 "이코노"/"미"처럼 어색하게 잘려 보인다).
+      var titleLines = chapter.title.split('\n');
+      titleLines.forEach(function (line, i) {
+        if (i > 0) tab.appendChild(document.createElement('br'));
+        tab.appendChild(document.createTextNode(line));
+      });
+      tab.setAttribute('aria-label', titleLines.join(' ') + ' 부분으로 이동');
       tab.style.setProperty('--tab-color', chapter.color);
       tab.style.setProperty('--tab-text', chapter.textColor);
       tab.dataset.pageIndex = String(pageIndex);
