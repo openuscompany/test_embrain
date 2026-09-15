@@ -210,9 +210,18 @@
     if (!indexRail || !bookCropEl || !stage) return;
     var stageRect = stage.getBoundingClientRect();
     var cropRect = bookCropEl.getBoundingClientRect();
+    // getBoundingClientRect()는 뷰포트 기준 좌표라서 확대 상태에서 stage가
+    // 스크롤되어 있으면(is-zoomed일 때 overflow:auto) 그만큼 값이 달라진다.
+    // 반면 style.left/top으로 주는 절대 위치는 stage 콘텐츠 기준(스크롤과 무관한)
+    // 좌표라서, 두 좌표계를 그대로 빼기만 하면 스크롤된 만큼 어긋난다.
+    // scrollLeft/scrollTop을 다시 더해줘서 스크롤 여부와 무관하게 항상 책의
+    // 실제 가장자리에 맞도록 보정한다.
     var gap = 0;
-    var left = Math.max(8, cropRect.right - stageRect.left + gap);
+    var left = Math.max(8, cropRect.right - stageRect.left + stage.scrollLeft + gap);
     indexRail.style.left = left + 'px';
+    // 세로는 가운데 정렬 대신 책의 실제 위쪽 가장자리에 맞춘다.
+    var top = Math.max(8, cropRect.top - stageRect.top + stage.scrollTop);
+    indexRail.style.top = top + 'px';
   }
 
   // book-crop의 width는 CSS transition(0.2s)으로 부드럽게 바뀌는데, applyCoverCrop()
@@ -222,7 +231,9 @@
   // 위치를 잡아줘서 최종 폭 기준으로 확실히 맞춘다.
   if (bookCropEl) {
     bookCropEl.addEventListener('transitionend', function (event) {
-      if (event.propertyName === 'width') positionIndexRail();
+      // width는 앞뒤 표지 크롭 때, transform은 확대/축소(scale) 때 각각 애니메이션되는데,
+      // 둘 다 끝난 뒤의 "최종" 크기를 기준으로 다시 붙여야 한다.
+      if (event.propertyName === 'width' || event.propertyName === 'transform') positionIndexRail();
     });
   }
 
