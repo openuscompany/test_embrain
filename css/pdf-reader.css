@@ -394,7 +394,12 @@ body {
   flex-direction: column;
   gap: 10px;
   max-height: calc(100% - 24px);
-  padding: 4px 0;
+  /* overflow-y:auto가 걸려 있으면 CSS 스펙상 overflow-x도 (visible로 놔둬도)
+     자동으로 auto 취급되어 버린다. 그래서 탭에 마우스를 올렸을 때 오른쪽으로
+     튀어나오는 translateX(4~6px)만큼이 이 컨테이너의 스크롤 경계에서 잘려
+     (가려져) 보였다. 오른쪽에 그 튀어나오는 폭만큼 미리 padding으로 공간을
+     확보해두면, 호버해도 이 요소 자신의 박스 범위를 벗어나지 않아 잘리지 않는다. */
+  padding: 4px 8px 4px 0;
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -406,8 +411,8 @@ body {
 .pr-index-tab {
   position: relative;
   flex: 0 0 auto;
-  width: 148px;
-  padding: 12px 14px;
+  width: 112px;
+  padding: 10px 12px;
   border-radius: 0 12px 12px 0;
   background: var(--tab-color, var(--color-accent));
   color: var(--tab-text, #ffffff);
@@ -440,10 +445,11 @@ body {
   }
 
   .pr-index-tab {
-    width: 104px;
-    padding: 9px 10px;
-    font-size: 0.6875rem;
-    border-radius: 0 10px 10px 0;
+    width: 62px;
+    padding: 6px 7px;
+    font-size: 0.5625rem;
+    line-height: 1.25;
+    border-radius: 0 8px 8px 0;
   }
 }
 
