@@ -119,7 +119,14 @@
     // 때문에, 경계값 근처에서는 크롬/엣지 등 브라우저에 따라 한 페이지 모드와
     // 두 페이지 모드가 다르게 나오는 문제가 있었다. 뷰포트 폭(모바일 CSS 분기와
     // 동일한 640px 기준)으로만 판단해야 PC에서는 항상 두 페이지로 통일된다.
-    if (stageRect.width < 640) {
+    // 다만 stageRect.width는 브라우저 자체 확대(Ctrl+휠, Ctrl+"+")에 영향을
+    // 받는다 — 브라우저를 확대하면 같은 물리 화면이라도 CSS 픽셀 기준 폭이
+    // 줄어들어서, PC에서도 이 값이 640 밑으로 내려가 한 페이지 모드로 잘못
+    // 바뀌는 문제가 있었다. window.screen.width는 브라우저 확대와 무관하게
+    // 모니터 자체의 크기를 반영하므로, 이걸로 모바일/PC 여부를 판단하면
+    // PC에서는 아무리 확대해도 항상 두 페이지 모드가 유지된다.
+    var isNarrowDevice = window.screen.width < 640;
+    if (isNarrowDevice) {
       // 화면이 좁으면 한 페이지만 보이는 모드에 맞춰 폭을 계산
       pageW = Math.min(availW, availH * aspect);
       pageH = pageW / aspect;
@@ -133,7 +140,7 @@
     var realDpr = window.devicePixelRatio || 1;
     var width = Math.round(pageW * realDpr) / realDpr;
     var height = Math.round(pageH * realDpr) / realDpr;
-    var isPortrait = stageRect.width < 640;
+    var isPortrait = isNarrowDevice;
 
     return {
       width: width,
@@ -312,6 +319,19 @@
     positionIndexRail();
   }
 
+  // transitionend는 OS의 "동작 줄이기"(모션 감소) 설정이 켜져 있으면 브라우저가
+  // transition 자체를 사실상 없애버려서 이벤트가 아예 안 오는 경우가 있다.
+  // 그러면 스크롤 보정(applyZoomAnchor)이 한 번도 안 걸려서 예전처럼 왼쪽 위로
+  // 튀어 보이는 문제가 재발한다. transitionend를 못 믿고, 타이머로도 한 번 더
+  // 강제로 불러준다 — applyZoomAnchor()가 이미 처리된 뒤(zoomAnchor === null)면
+  // 아무 일도 안 하도록 되어 있어서 두 번 겹쳐 불려도 안전하다.
+  function scheduleZoomAnchorFallback() {
+    setTimeout(function () {
+      applyZoomAnchor();
+      positionIndexRail();
+    }, 260);
+  }
+
   if (zoomInBtn) {
     zoomInBtn.addEventListener('click', function () {
       var nextLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 100) / 100);
@@ -319,6 +339,7 @@
       captureZoomAnchor();
       zoomLevel = nextLevel;
       applyZoom();
+      scheduleZoomAnchorFallback();
     });
   }
   if (zoomOutBtn) {
@@ -328,6 +349,7 @@
       captureZoomAnchor();
       zoomLevel = nextLevel;
       applyZoom();
+      scheduleZoomAnchorFallback();
     });
   }
   // 버튼을 누르기 전, 처음 화면에 뜰 때부터 scale(1)이 걸려 있어야 한다
