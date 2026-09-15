@@ -122,8 +122,14 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  /* 가운데 정렬(align-items/justify-content: center)은 확대해서 내용이 커지면
+     위/왼쪽으로 넘치는 부분을 스크롤로 절대 못 보는 CSS의 고질적인 한계가 있다.
+     대신 시작 정렬(flex-start) + 책 쪽의 margin:auto 조합을 쓰면, 내용이 화면보다
+     작을 땐 auto margin이 남는 공간을 채우며 똑같이 가운데로 보이고, 커져서
+     넘치면 auto margin이 0이 되면서 자연스럽게 시작 위치 기준으로 바뀌어
+     스크롤로 전부 닿을 수 있다. */
+  align-items: flex-start;
+  justify-content: flex-start;
   padding: 16px;
   background-color: var(--color-bg);
   transition: background-color 0.2s ease;
@@ -136,6 +142,7 @@ body {
   position: relative;
   width: 100%;
   overflow: hidden;
+  margin: auto;
   transition: width 0.2s ease, transform 0.2s ease;
   /* 확대(scale)가 기본값인 중심 기준으로 커지면 위/왼쪽으로도 넘쳐서, 그 방향은
      스크롤해도 닿지 않는(음수 스크롤이 필요한) 영역이 되어버린다. 기준점을
@@ -143,16 +150,12 @@ body {
   transform-origin: top left;
 }
 
-/* 확대 상태에서는 책이 화면보다 커질 수 있어서, 스크롤로 나머지 부분을 볼 수 있게 한다 */
+/* 확대 상태에서는 책이 화면보다 커질 수 있어서, 스크롤로 나머지 부분을 볼 수 있게 한다.
+   정렬은 .pr-stage의 flex-start + 위 .pr-book-crop의 margin:auto 조합이 이미
+   "작을 땐 가운데, 커지면 시작 위치" 전환을 자동으로 처리해주므로 여기서 따로
+   손댈 필요가 없다. */
 .pr-stage.is-zoomed {
   overflow: auto;
-  /* flex의 justify-content/align-items: center는 콘텐츠가 커져서 넘칠 때
-     시작 쪽(위/왼쪽)으로 넘친 부분은 스크롤해도 닿지 않는 고질적인 문제가
-     있다(중앙 정렬 기준으로 마이너스 스크롤이 필요한데 그게 불가능해서).
-     확대 상태에서는 중앙 정렬을 포기하고 시작 위치로 정렬해서, 넘친 모든
-     방향을 스크롤로 온전히 볼 수 있게 한다. */
-  align-items: flex-start;
-  justify-content: flex-start;
 }
 
 /* 확대 상태에서는 책 위에서 손가락/마우스로 끌어도 "페이지 넘기기" 제스처가
