@@ -21,12 +21,12 @@
   // 목차 탭에 표시할 챕터 목록. 다른 자료로 교체할 때는 이 배열도 그 자료의 목차에 맞게 수정하세요.
   // page: 그 챕터가 시작하는 실제 이미지 페이지 번호(1부터 시작). color: 탭 배경(파스텔 톤), textColor: 탭 글자색.
   var CHAPTERS = [
-    { title: "'영점소비' 시대", page: 10, color: '#cdd3f7', textColor: '#3d4a9e' },
+    { title: "'영점소비'\n시대", page: 10, color: '#cdd3f7', textColor: '#3d4a9e' },
     { title: '1. 마이-파이', page: 31, color: '#c9ead9', textColor: '#2f8a5b' },
     { title: '2. 언클리셰', page: 45, color: '#cdeaf3', textColor: '#1f7c9c' },
     { title: '3. BPM\n이코노미', page: 59, color: '#f6d3e2', textColor: '#b1447a' },
     { title: '4. 스탯 맥싱', page: 71, color: '#ddd6f7', textColor: '#6249c7' },
-    { title: '영점 조준의 시대', page: 79, color: '#cdd3f7', textColor: '#3d4a9e' }
+    { title: '영점 조준의\n시대', page: 79, color: '#cdd3f7', textColor: '#3d4a9e' }
   ];
 
   // 모바일 브라우저(특히 카카오톡 등 인앱 브라우저)는 100dvh를 지원 안 하거나 주소창이
@@ -48,8 +48,10 @@
   var bookEl = document.getElementById('pr-book');
   var loadingEl = document.getElementById('pr-loading');
   var hintEl = document.getElementById('pr-hint');
+  var firstBtn = document.getElementById('pr-first');
   var prevBtn = document.getElementById('pr-prev');
   var nextBtn = document.getElementById('pr-next');
+  var lastBtn = document.getElementById('pr-last');
   var currentEl = document.querySelector('.pr-indicator__current');
   var totalEl = document.querySelector('.pr-indicator__total');
   var indexRail = document.getElementById('pr-index-rail');
@@ -583,6 +585,8 @@
     if (totalEl) totalEl.textContent = String(totalPages);
     if (prevBtn) prevBtn.disabled = pageIndex <= 0;
     if (nextBtn) nextBtn.disabled = pageIndex >= totalPages - 1;
+    if (firstBtn) firstBtn.disabled = pageIndex <= 0;
+    if (lastBtn) lastBtn.disabled = pageIndex >= totalPages - 1;
     setActiveIndexTab(pageIndex);
     updateBookmarkUI(pageIndex);
     updateMemoUI(pageIndex);
@@ -793,6 +797,20 @@
   if (nextBtn) {
     nextBtn.addEventListener('click', function () {
       if (pageFlip) pageFlip.turnToNextPage();
+      hideHintOnce();
+    });
+  }
+
+  if (firstBtn) {
+    firstBtn.addEventListener('click', function () {
+      if (pageFlip) pageFlip.turnToPage(0);
+      hideHintOnce();
+    });
+  }
+
+  if (lastBtn) {
+    lastBtn.addEventListener('click', function () {
+      if (pageFlip) pageFlip.turnToPage(pageCount - 1);
       hideHintOnce();
     });
   }
