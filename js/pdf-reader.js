@@ -9,6 +9,15 @@
     return PAGE_FOLDER + '/page-' + padded + '.jpg';
   }
 
+  // PC/모바일 여부 판단 기준을 여기 한 곳에 모아둔다. 뷰포트 폭(CSS 픽셀) 대신
+  // window.screen.width(모니터 자체의 물리 크기)를 쓰는 이유는 sizeBookToStage()의
+  // 페이지 모드 판단과 동일 — 브라우저 자체 확대(Ctrl+휠 등)에 영향받지 않아야
+  // PC에서 확대해도 모바일 레이아웃(한 페이지 모드, 목차 상단 배치)으로 잘못
+  // 바뀌지 않는다. 목차 위치(오른쪽/위쪽)도 이 기준을 그대로 따라간다.
+  function isMobileLayout() {
+    return window.screen.width < 640;
+  }
+
   // 목차 탭에 표시할 챕터 목록. 다른 자료로 교체할 때는 이 배열도 그 자료의 목차에 맞게 수정하세요.
   // page: 그 챕터가 시작하는 실제 이미지 페이지 번호(1부터 시작). color: 탭 배경(파스텔 톤), textColor: 탭 글자색.
   var CHAPTERS = [
@@ -95,37 +104,32 @@
 
   function sizeBookToStage(aspect) {
     var stageRect = stage.getBoundingClientRect();
-    // 목차가 책 오른쪽 가장자리에 붙어서 따라다니므로, 책 너비를 계산할 때
-    // 그 폭만큼 미리 비워둬서 화면 밖으로 넘치지 않게 한다.
-    var railWidth = (indexRail && indexRail.offsetWidth) || 0;
+    var mobileLayout = isMobileLayout();
+    // 목차가 PC에서는 책 오른쪽 가장자리에, 모바일에서는 책 위쪽에 붙어서 따라다니므로,
+    // 책 크기를 계산할 때 그만큼 미리 비워둬서 화면 밖으로 넘치거나 겹치지 않게 한다.
+    var railWidth = (!mobileLayout && indexRail && indexRail.offsetWidth) || 0;
+    var railHeight = (mobileLayout && indexRail && indexRail.offsetHeight) || 0;
     // .pr-stage는 flex로 책을 "화면 전체 폭" 기준 가운데 정렬하는데, 그 상태에서 책 폭만
     // railWidth만큼 줄이면 줄어든 만큼이 좌우로 반씩(가운데 정렬이니) 나뉘어 여백이 되고,
     // 정작 목차가 필요한 오른쪽에는 그 절반만 남아 목차가 화면 밖으로 잘려나간다.
-    // 오른쪽 padding을 그만큼 미리 늘려서, 책이 그 줄어든 영역 안에서 가운데 정렬되게
-    // 하면 오른쪽에 목차가 들어갈 공간이 통째로 남는다.
-    // +6은 탭에 마우스를 올리거나 활성 탭일 때 오른쪽으로 살짝 튀어나오는
-    // translateX(hover 4px/active 6px) 애니메이션 여유분 — 이 여유가 없으면
-    // 마우스를 올렸을 때 튀어나온 부분이 화면 밖으로 잘려 보인다.
-    stage.style.paddingRight = (16 + railWidth + 6) + 'px';
+    // 오른쪽(또는 모바일에서는 위쪽) padding을 그만큼 미리 늘려서, 책이 그 줄어든 영역
+    // 안에서 가운데 정렬되게 하면 목차가 들어갈 공간이 통째로 남는다.
+    // +6은 탭에 마우스를 올리거나 활성 탭일 때 살짝 튀어나오는 애니메이션 여유분 —
+    // 이 여유가 없으면 마우스를 올렸을 때 튀어나온 부분이 화면 밖으로 잘려 보인다.
+    stage.style.paddingRight = mobileLayout ? '16px' : (16 + railWidth + 6) + 'px';
+    stage.style.paddingTop = mobileLayout ? (16 + railHeight + 6) + 'px' : '16px';
     var availW = Math.max(200, stageRect.width - 32 - railWidth);
-    var availH = Math.max(200, stageRect.height - 32);
+    var availH = Math.max(200, stageRect.height - 32 - railHeight);
 
     // 두 페이지가 나란히 펼쳐지는 스프레드 기준으로 한 페이지 폭을 계산
     var pageW = Math.min(availW / 2, availH * aspect);
     var pageH = pageW / aspect;
 
-    // 계산된 페이지 폭(pageW)이 아니라 뷰포트 자체의 폭으로 모바일/PC를 가른다.
-    // pageW는 화면비·스크롤바 폭 등 브라우저마다 미묘하게 다른 값들이 섞여 계산되기
-    // 때문에, 경계값 근처에서는 크롬/엣지 등 브라우저에 따라 한 페이지 모드와
-    // 두 페이지 모드가 다르게 나오는 문제가 있었다. 뷰포트 폭(모바일 CSS 분기와
-    // 동일한 640px 기준)으로만 판단해야 PC에서는 항상 두 페이지로 통일된다.
-    // 다만 stageRect.width는 브라우저 자체 확대(Ctrl+휠, Ctrl+"+")에 영향을
-    // 받는다 — 브라우저를 확대하면 같은 물리 화면이라도 CSS 픽셀 기준 폭이
-    // 줄어들어서, PC에서도 이 값이 640 밑으로 내려가 한 페이지 모드로 잘못
-    // 바뀌는 문제가 있었다. window.screen.width는 브라우저 확대와 무관하게
-    // 모니터 자체의 크기를 반영하므로, 이걸로 모바일/PC 여부를 판단하면
-    // PC에서는 아무리 확대해도 항상 두 페이지 모드가 유지된다.
-    var isNarrowDevice = window.screen.width < 640;
+    // 계산된 페이지 폭(pageW)이 아니라 window.screen.width(모니터 자체의 물리 크기,
+    // 브라우저 자체 확대에 영향받지 않음) 기준으로 모바일/PC를 가른다 — isMobileLayout()
+    // 참고. pageW나 뷰포트 폭(stageRect.width)을 기준으로 삼으면 브라우저를
+    // Ctrl+휠 등으로 확대했을 때 PC에서도 한 페이지 모드로 잘못 바뀌는 문제가 있었다.
+    var isNarrowDevice = mobileLayout;
     if (isNarrowDevice) {
       // 화면이 좁으면 한 페이지만 보이는 모드에 맞춰 폭을 계산
       pageW = Math.min(availW, availH * aspect);
@@ -236,6 +240,22 @@
     // 좌표라서, 두 좌표계를 그대로 빼기만 하면 스크롤된 만큼 어긋난다.
     // scrollLeft/scrollTop을 다시 더해줘서 스크롤 여부와 무관하게 항상 책의
     // 실제 가장자리에 맞도록 보정한다.
+    var mobileLayout = isMobileLayout();
+    indexRail.classList.toggle('pr-index-rail--top', mobileLayout);
+
+    if (mobileLayout) {
+      // 모바일은 화면이 좁아 책 오른쪽에 붙일 자리가 없으므로, 책 위쪽에
+      // 가로로 눕혀 붙인다(예전 작업물의 배치 방식). 책 폭에 맞춰 탭이
+      // 균등하게 나뉘도록 rail 폭도 책 폭에 맞춘다.
+      indexRail.style.width = cropRect.width + 'px';
+      var leftTop = Math.max(8, cropRect.left - stageRect.left + stage.scrollLeft);
+      indexRail.style.left = leftTop + 'px';
+      var topTop = Math.max(8, cropRect.top - stageRect.top + stage.scrollTop - indexRail.offsetHeight);
+      indexRail.style.top = topTop + 'px';
+      return;
+    }
+
+    indexRail.style.width = '';
     var gap = 0;
     var left = Math.max(8, cropRect.right - stageRect.left + stage.scrollLeft + gap);
     indexRail.style.left = left + 'px';
@@ -580,6 +600,10 @@
     if (!indexRail) return;
     indexRail.innerHTML = '';
     indexTabs = [];
+    // sizeBookToStage()가 이 함수 직후 곧바로 목차 폭/높이를 재서 책 크기를 계산하므로,
+    // 실제 위치는 positionIndexRail()이 나중에 잡더라도 레이아웃 모드(PC/모바일)만은
+    // 여기서 미리 맞춰둬야 그 측정값이 맞는 모드 기준으로 나온다.
+    indexRail.classList.toggle('pr-index-rail--top', isMobileLayout());
 
     CHAPTERS.forEach(function (chapter) {
       var pageIndex = Math.max(0, Math.min(numPages - 1, chapter.page - 1));
