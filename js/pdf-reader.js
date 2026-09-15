@@ -253,7 +253,11 @@
   var zoomLevelEl = document.getElementById('pr-zoom-level');
 
   function applyZoom() {
-    if (bookCropEl) bookCropEl.style.transform = zoomLevel === 1 ? '' : 'scale(' + zoomLevel + ')';
+    // 100%(scale(1))일 때 transform을 아예 빼버리면(빈 문자열) 그 요소가 별도
+    // GPU 레이어로 안 분리되어, 확대했을 때와 다른 경로로 그려지면서 100%에서만
+    // 살짝 덜 선명해 보이는 것으로 추정된다. scale(1)을 그대로 남겨서 확대 여부와
+    // 상관없이 항상 같은(레이어 분리된) 경로로 그려지게 한다.
+    if (bookCropEl) bookCropEl.style.transform = 'scale(' + zoomLevel + ')';
     if (zoomLevelEl) zoomLevelEl.textContent = Math.round(zoomLevel * 100) + '%';
     // 확대되면 책이 화면보다 커질 수 있어서, 그 안에서 스크롤로 나머지를 볼 수 있게 한다.
     if (stage) stage.classList.toggle('is-zoomed', zoomLevel > 1);
@@ -272,6 +276,10 @@
       applyZoom();
     });
   }
+  // 버튼을 누르기 전, 처음 화면에 뜰 때부터 scale(1)이 걸려 있어야 한다
+  // (안 그러면 확대 버튼을 한 번도 안 누른 "기본 100%" 상태는 여전히 예전 방식대로
+  // 그려진다).
+  applyZoom();
 
   // --- 책갈피 (책에 직접 꽂힌 리본처럼 표시 + 좌상단 패널에서 목록으로 모아보기) ---
   var BOOKMARK_KEY = 'pr-bookmarks';
