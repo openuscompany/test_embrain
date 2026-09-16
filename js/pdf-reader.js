@@ -199,6 +199,37 @@
     ctx.imageSmoothingQuality = 'high';
   }
 
+  // 책(book-crop)은 .pr-stage 안에서 margin:auto로 가운데 정렬되는데, 이 여백은
+  // 브라우저가 "화면 폭 - 책 폭"의 절반으로 계산해서 픽셀 단위 미만(0.5px 등)의
+  // 소수점 값이 나올 수 있다. 그러면 책이 물리 픽셀 경계에 딱 맞지 않고 두 픽셀에
+  // 걸쳐 그려져서, 브라우저가 화면에 최종적으로 그릴 때 그 경계를 보간(흐리게)
+  // 처리한다 — 확대 배율(150%/200%)에서는 우연히 정수 픽셀에 맞아떨어져 선명하고
+  // 100%에서만 흐려 보이는 것도 이 때문일 수 있다. 실제 렌더링 위치를 재서 가장
+  // 가까운 물리 픽셀(1/devicePixelRatio 단위)로 미세하게 보정한다.
+  function snapBookToPixelGrid() {
+    if (!stage || !bookCropEl) return;
+    // 확대 중에는 이미 선명하다는 확인을 받았으므로 건드리지 않는다 — 100%(줌 없음)
+    // 상태의 이 문제만 정확히 겨냥해서 고친다.
+    if (zoomLevel !== 1) return;
+    // .pr-book-crop은 width/transform에 0.2초 transition이 걸려 있어서, 이 함수가
+    // (표지 크롭 전환 직후처럼) transition이 아직 끝나지 않은 시점에 불리면
+    // getBoundingClientRect()가 "지금 애니메이션 중인 중간 위치"를 재게 되고, 거기
+    // 기준으로 보정값을 넣어도 그 자체가 또 transition을 새로 만들어 계속 어긋난다.
+    // transition을 잠깐 꺼서 "최종적으로 정착할 위치"를 즉시 확정한 뒤에만 재고,
+    // 보정도 애니메이션 없이 그 자리에서 바로 적용한다.
+    var prevTransition = bookCropEl.style.transition;
+    bookCropEl.style.transition = 'none';
+    bookCropEl.style.transform = 'scale(1)';
+    void bookCropEl.offsetWidth; // 강제 리플로우: 위 스타일이 즉시 반영되게 한다
+    var dpr = window.devicePixelRatio || 1;
+    var cropRect = bookCropEl.getBoundingClientRect();
+    var deltaX = Math.round(cropRect.left * dpr) / dpr - cropRect.left;
+    var deltaY = Math.round(cropRect.top * dpr) / dpr - cropRect.top;
+    bookCropEl.style.transform = 'translate(' + deltaX + 'px, ' + deltaY + 'px) scale(1)';
+    void bookCropEl.offsetWidth; // 이 보정도 애니메이션 없이 즉시 확정시킨다
+    bookCropEl.style.transition = prevTransition;
+  }
+
   // 앞표지(0페이지)·뒤표지(마지막 페이지)는 스프레드가 아니라 한 페이지만 있으므로,
   // 책 전체 폭(2페이지 스프레드 기준) 중 그 페이지가 있는 절반만 보이게 잘라내고
   // 나머지 빈 절반은 숨긴다. 책 자체 크기는 그대로 두고 보이는 영역만 좁히는 방식이라
@@ -222,6 +253,9 @@
       bookCropEl.style.width = fullWidth + 'px';
       bookEl.style.marginLeft = '0px';
     }
+    // 표지 크롭으로 책의 너비가 바뀌면 margin:auto가 다시 계산되어 반픽셀
+    // 위치가 새로 생길 수 있으므로, 위치를 다시 잡을 때마다 매번 보정한다.
+    snapBookToPixelGrid();
     positionIndexRail();
   }
 
@@ -275,6 +309,10 @@
     bookCropEl.addEventListener('transitionend', function (event) {
       // width는 앞뒤 표지 크롭 때, transform은 확대/축소(scale) 때 각각 애니메이션되는데,
       // 둘 다 끝난 뒤의 "최종" 크기를 기준으로 다시 붙여야 한다.
+      // width가 바뀌면 margin:auto 가운데 정렬도 새 폭 기준으로 다시 계산되어 반픽셀
+      // 오차가 새로 생길 수 있으므로, snapBookToPixelGrid()를 애니메이션 시작 직후가
+      // 아니라 여기(전환이 실제로 끝난 뒤)에 다시 불러야 최종 위치 기준으로 맞는다.
+      if (event.propertyName === 'width') snapBookToPixelGrid();
       if (event.propertyName === 'transform') applyZoomAnchor();
       if (event.propertyName === 'width' || event.propertyName === 'transform') positionIndexRail();
     });
@@ -330,7 +368,15 @@
     // GPU 레이어로 안 분리되어, 확대했을 때와 다른 경로로 그려지면서 100%에서만
     // 살짝 덜 선명해 보이는 것으로 추정된다. scale(1)을 그대로 남겨서 확대 여부와
     // 상관없이 항상 같은(레이어 분리된) 경로로 그려지게 한다.
-    if (bookCropEl) bookCropEl.style.transform = 'scale(' + zoomLevel + ')';
+    // 100%로 돌아왔을 때는 margin:auto 가운데 정렬의 반픽셀 오차도 같이 보정한다
+    // (snapBookToPixelGrid가 알아서 scale(1)까지 포함해서 transform을 설정한다).
+    if (bookCropEl) {
+      if (zoomLevel === 1) {
+        snapBookToPixelGrid();
+      } else {
+        bookCropEl.style.transform = 'scale(' + zoomLevel + ')';
+      }
+    }
     if (zoomLevelEl) zoomLevelEl.textContent = Math.round(zoomLevel * 100) + '%';
     // 캔버스 해상도가 devicePixelRatio만 반영하고 확대 배율은 반영 못 하고 있었어서
     // (transform은 레이아웃 크기를 안 바꾸니 clientWidth가 그대로라), 확대할 때마다
